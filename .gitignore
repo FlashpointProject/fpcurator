@@ -2,3 +2,5 @@ urls.txt
 errors.txt
 __pycache__
 *.pyc
+build
+dist

@@ -1,5 +1,6 @@
 import fpclib
 import sys, glob, os, logging
+import codecs, json, re, bs4, zipfile
 
 urls = []
 links = []

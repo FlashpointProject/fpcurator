@@ -2,7 +2,7 @@
 # Some games can only be curated through https links.
 
 from __main__ import fpclib
-import json, bs4, zipfile
+from __main__ import json, bs4, zipfile
 
 regex = 'coolmath-?games.com'
 
