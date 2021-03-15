@@ -4,8 +4,9 @@ fpcurator is a Python and fpclib powered tool for auto-generating curations for 
 If you don't want to install python to use fpcurator, check the releases page for a standalone executable.
 
 Links:
-[fpclib documentation](https://xmgzx.github.io/apps/fpclib/)
-[beautifulsoup4 documentation](https://www.crummy.com/software/BeautifulSoup/bs4/doc/)
+
+- [fpclib documentation](https://xmgzx.github.io/apps/fpclib/)
+- [beautifulsoup4 documentation](https://www.crummy.com/software/BeautifulSoup/bs4/doc/)
 
 
 
