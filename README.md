@@ -1,14 +1,7 @@
 # fpcurator
-fpcurator is a Python and fpclib powered tool for auto-generating curations for Flashpoint.
+fpcurator is a Python and fpclib powered tool for downloading urls, auto-generating curations, bulk searching for already curated games, and listing tags/platforms/games/animations for Flashpoint.
 
 If you don't want to install python to use fpcurator, check the releases page for a standalone executable.
-
-Links:
-
-- [fpclib documentation](https://xmgzx.github.io/apps/fpclib/)
-- [beautifulsoup4 documentation](https://www.crummy.com/software/BeautifulSoup/bs4/doc/)
-
-
 
 ## Basic Usage
 
@@ -30,7 +23,7 @@ regex = 'website.com'
 # Priority that the site has when matching regexes. Higher priorities will be checked first. If left out, it is assumed to be 0.
 priority = 0
 
-# "WebsiteName" should be the exact same as the name in <WebsiteName>.py, otherwise fpclib will complain.
+# "WebsiteName" should be the exact same as the name in <WebsiteName>.py, otherwise fpcurator will complain.
 class WebsiteName(fpclib.Curation):
     def parse(self, osoup):
         # "self" is a curation generated from a given matched url (see fpclib.Curation in the fpclib documentation), while osoup is a beautifulsoup object generated from the html downloaded from the given matched url.
@@ -40,3 +33,6 @@ class WebsiteName(fpclib.Curation):
     # get_files(self) - This method is called after parse() called to get the files specified by the launch commands of the curation and additional apps (by default). Overwrite it if you want to download other files into the curation (like for html files).
     # soupify(self) - called to get osoup for the parse method. Overwrite it if you need to provide specific information (like login info or a captcha token) to a webpage in order to access the page properly.
 ```
+
+For information on how to use beautifulsoup, check out the [official documentation](https://www.crummy.com/software/BeautifulSoup/bs4/doc/).
+For information on how to use fpclib, check out the [official documentation](https://xmgzx.github.io/apps/fpclib/).

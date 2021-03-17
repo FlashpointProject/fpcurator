@@ -1,0 +1,42 @@
+<!doctype html>
+<html><body>
+    <h2><center>Help</center></h2>
+    <p>fpcurator is a collection of tools for performing certain curation tasks easier. There are four sub-tools available. Note that the tool may freeze while performing any task. All debug info on any task is printed to the console the program should have launched with.</p>
+    
+    <h3>Download URLs</h3>
+    <p>The Download URLs tool downloads and formats a list of files from a list of urls into a collection of organized folders inside the directory specified by "Output Folder". It works in a similar way to cURLsDownloader, but is powered by fpclib. Put all the urls you want to download into the textbox and press "Download".<br>
+    Here are a list of options:
+    <ul>
+        <li><b>Remove "web.archive.org"</b> - When checked, the downloader will put all urls downloaded from the web archive back into their original domains.</li>
+        <li><b>Keep URLVars</b> - When checked, the downloader will append url vars present on links being downloaded to the end of the html file. This is only necessary when you have two links to the same webpage that generate different html due to the url vars.</li>
+        <li><b>Clear URLs</b> - When checked, the downloader will clear any urls in the list when they are downloaded. Errored urls will remain in the list.</li>
+        <li><b>Show Done</b> - When checked, the downloader will show a message box when it is done downloading.</li>
+    </ul>
+    </p>
+    
+    <h3>Auto Curator</h3>
+    <p>The Auto Curator tool generates a bunch of partial curations based upon a list of urls containing the games to curate. The list of curatable websites is limited the site definitions in the "sites" folder next to the program.<br>
+    Here are a list of options:
+    <ul>
+        <li><b>Save</b> - When checked, the auto curator will save it's progress so if it fails from an error, the tool will resume where it left off given the same urls.</li>
+        <li><b>Use Titles</b> - When checked, the auto curator will use the titles of curated games instead of a randomly generated uuid.</li>
+        <li><b>Clear URLs</b> - When checked, the auto curator will clear any urls in the list when they are curated. Errored urls will remain in the list.</li>
+        <li><b>Show Done</b> - When checked, the auto curator will show a message box when it is done curating.</li>
+    </ul>
+    </p>
+    
+    <h3>Search</h3>
+    <p>The Search tool can take a list of game titles and a list of urls for those titles and bulk check how likely it is those games are in Flashpoint. You will need to load the Flashpoint database (Flashpoint/Data/flashpoint.sqlite) for it to check through, in addition to providing regexes that will be used to check if games in Flashpoint have the right Source, Publisher, or Developer that would match a game title in the list.<br>
+    Here are a list of options:
+    <ul>
+        <li><b>Priorities</b> - When checked, the searcher will generate a list of numeric priorities and print them into a file named "priorities.tsv" next to the program.</li>
+        <li><b>Log</b> - When checked, the searcher will generate a more human readable log displaying how likely each it is those games are in Flashpoint.</li>
+        <li><b>Strip Subtitles</b> - When checked, titles will be stripped of subtitles when searching for them in Flashpoint.</li>
+        <li><b>Exact Url Matches</b> - When unchecked, the searcher will skip checking for exact url matches for a game match in Flashpoint. Normally an exact url match is a very good indicator if a game is curated, but this is optional in case multiple games are on the same url.</li>
+        <li><b>Use difflib</b> - When checked, the searcher will use the default python difflib instead of the fast and efficient python-Levenshtein.</li>
+    </ul>
+    </p>
+    
+    <h3>Wiki Data</h3>
+    <p>The Wiki Data tool provides you with the ability to get a list of all Tags, Platforms, Games, or Animations in Flashpoint. Just select the given page and press "Find".</p>
+</body></html>
