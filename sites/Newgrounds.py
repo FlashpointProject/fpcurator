@@ -18,10 +18,11 @@ TOKEN_HEADERS = {"COOKIE": "COOKIE_CONTAINING_TOKEN_GOES=HERE"}
 # This is the class to use to curate with. It is also required!
 class Newgrounds(fpclib.Curation):
     def parse(self, osoup):
+        
         # Check for login-lock
         login = "requires a Newgrounds account to play" in osoup.select_one(".column").text
         if login:
-            soup = fpclib.get_soup(self.get_meta('url'), headers=TOKEN_HEADERS)
+            soup = fpclib.get_soup(self.url, headers=TOKEN_HEADERS)
         else:
             soup = osoup
         
@@ -73,8 +74,15 @@ class Newgrounds(fpclib.Curation):
             lib = 'arcade'
         else:
             lib = 'theatre'
+        
         # Get Logo
-        #self.logo = content_area.find('meta', itemprop='thumbnailUrl')['content']
+        try:
+            # Get id based on url
+            nid = self.url[self.url.rfind("/")+1:]
+            self.logo = f"https://picon.ngfiles.com/{nid[:-3]}000/flash_{nid}_card.png"
+        except: pass
+        
+        
         # Determine Extreme
         if header['class'] in ['rated-m', 'rated-a']:
             extreme = 'Yes'
@@ -169,3 +177,9 @@ class Newgrounds(fpclib.Curation):
                 fpclib.download_all([self.get_meta('unity_file')])
         else:
             super().get_files()
+    
+    def save_image(self, url, file_name):
+        # Surround save image with a try catch loop as some logos cannot be gotten.
+        try:
+            fpclib.download_image(url, name=file_name)
+        except: pass

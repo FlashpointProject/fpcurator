@@ -5,9 +5,9 @@ If you don't want to install python to use fpcurator, check the releases page fo
 
 ## Basic Usage
 
-To curate a list of urls, create a text file and put all the urls you want to curate into that file (one per line). After that, you should be able to drag and drop the file onto the AutoCurator script/executable and it will attempt to create partial curations for every file in the list. By default, the curations will be put in a folder named `output`, and any failed urls will be put into a file named `errors.txt`.
+Launch the script or executable and choose a tab. You can also drag and drop a list of urls on to the program (if you are using the standalone or have python configured correctly) to quickly automatically curate them. For more detailed help on how to use the program, see the built-in "Help" button.
 
-If you want to change _how_ the script works, change any of the settings in the `options.ini` file.
+If you are looking for command line usage, run `fpcurator --help` or `fpcurator.py --help` in the terminal of your choice.
 
 ## Adding Site Definitions
 
@@ -15,7 +15,13 @@ By default, fpcurator only supports urls from Coolmath Games and Newgrounds. To 
 
 ```python
 from __main__ import fpclib
-# You can put other imports here, but the standalone only supports importing the following other libraries from __main__: sys, glob, os, logging, codecs, json, re, bs4, zipfile. Other imports require python to be installed on the host machine.
+# You can put other imports here, but the standalone only supports importing the following other libraries from __main__ (Other imports require python to be installed on the host machine):
+
+# os, sys, time, re, json,
+# bs4, argparse, codecs, datetime, glob,
+# sqlite3, threading, traceback, webbrowser, zipfile,
+# difflib, and Levenshtein.
+
 
 # This is the regex that will be used to match the site url. It is required!
 regex = 'website.com'
@@ -32,6 +38,7 @@ class WebsiteName(fpclib.Curation):
 	# You can also overwrite any other methods of fpclib.Curation here to add custom functionality, including but not limited to:
     # get_files(self) - This method is called after parse() called to get the files specified by the launch commands of the curation and additional apps (by default). Overwrite it if you want to download other files into the curation (like for html files).
     # soupify(self) - called to get osoup for the parse method. Overwrite it if you need to provide specific information (like login info or a captcha token) to a webpage in order to access the page properly.
+    # save_image(self, url, file_name) - called both to save the logo and screenshot of the curation based on self.logo and self.ss (only if they are set). This by default does NO error checking, so if you want error checking you'll have to overwrite this function.
 ```
 
 For information on how to use beautifulsoup, check out the [official documentation](https://www.crummy.com/software/BeautifulSoup/bs4/doc/).

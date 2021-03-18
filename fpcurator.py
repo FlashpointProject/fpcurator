@@ -1,8 +1,19 @@
 import fpclib
-import os, sys, traceback, sqlite3, re, difflib, codecs, glob, json, datetime
-import bs4, zipfile
-try:
-    import Levenshtein
+import os, sys, time
+import re, json, bs4
+
+import argparse
+import codecs
+import datetime
+import glob
+import sqlite3
+import threading
+import traceback
+import webbrowser
+import zipfile
+
+import difflib
+try: import Levenshtein
 except: pass
 
 import tkinterhtml as tkhtml
@@ -20,19 +31,19 @@ TEXTS = {
     'info.numerics': ' (%d - %.3f%%)',
     'sum.totalgames': '%d Games Total',
     'sum.titlematch': '%d games match titles',
-    'sum.sourcematch': '%d games match part of their source in the master list',
+    'sum.sourcematch': '%d games are from the same source/developer/publisher as the list',
     'sum.either': '%d games match either query',
     'sum.lowmetric': '%d games have a very low similarity metric',
     'sum.priority': '%d games (%.3f%%) probably need curating',
     'sum.priority2': '%d games (%.3f%%) definitely need curating',
     'dup.note': 'These are a list of games that have been omitted from the search because they share the same name with another game in the list',
     'p5.exacturl': 'Exact url matches',
-    'p5.partialurl': 'Exact url matches ignoring "http:// and any extra parentheses"',
-    'p5.titleandsdp': 'Title matches with games that match part of their source/developer/publisher',
-    'p4.titlestartsandssdp': 'Title starts another Title (>10 characters) that matches part of its source/developer/publisher',
+    'p5.partialurl': 'Exact url matches ignoring protocol and extra source data (like Via. Wayback)',
+    'p5.titleandsdp': 'Title matches with a game that is from the same source/developer/publisher',
+    'p4.titlestartsandssdp': 'Title starts the title of a game from the same source/developer/publisher (and is >10 characters long)',
     'p4.titleonly': 'Title matches',
-    'p4.titlestartstitle': 'Title starts another Title (>10 characters)',
-    'p4.titleintitle': 'Title is in another Title (>10 characters)',
+    'p4.titlestartstitle': 'Title is in the title of a game in Flashpoint (and is >10 characters long)',
+    'p4.titleintitle': 'Title is in the title of a game in Flashpoint (and is >10 characters long)',
     'p4.highmetric': 'Has a high similarity metric (>95%)',
     'p3.leftovers': 'Leftovers',
     'p3.leftovers2': 'These are the games that didn\'t match any query',
@@ -58,6 +69,19 @@ def printfl(data):
     print(data, end="")
     sys.stdout.flush()
 
+frozen_ui = False
+def freeze(subtitle):
+    global frozen_ui
+    frozen_ui = True
+    MAINFRAME.freeze(subtitle)
+
+def unfreeze():
+    global frozen_ui
+    frozen_ui = False
+
+def edit_file(file):
+    webbrowser.open(file)
+
 class Mainframe(tk.Tk):
     def __init__(self):
         # Create window
@@ -67,18 +91,18 @@ class Mainframe(tk.Tk):
         self.protocol("WM_DELETE_WINDOW", self.exit_window)
         
         # Add tabs
-        tabs = ttk.Notebook(self)
-        tabs.pack(expand=True, fill="both", padx=5, pady=5)
+        self.tabs = ttk.Notebook(self)
+        self.tabs.pack(expand=True, fill="both", padx=5, pady=5)
         
-        self.downloader = Downloader()
         self.autocurator = AutoCurator()
+        self.downloader = Downloader()
         self.searcher = Searcher()
         self.lister = Lister()
         
-        tabs.add(self.autocurator, text="Auto Curator")
-        tabs.add(self.downloader, text="Download URLs")
-        tabs.add(self.searcher, text="Search")
-        tabs.add(self.lister, text="Wiki Data")
+        self.tabs.add(self.autocurator, text="Auto Curator")
+        self.tabs.add(self.downloader, text="Download URLs")
+        self.tabs.add(self.searcher, text="Search")
+        self.tabs.add(self.lister, text="Wiki Data")
         
         # Add help and about label
         bframe = tk.Frame(self)
@@ -103,6 +127,40 @@ class Mainframe(tk.Tk):
         
         # Load GUI state from last close
         self.load()
+        
+        # Setup timer for unfreeze events
+        self.frozen = False
+        self.after(100, self.check_freeze)
+    
+    def check_freeze(self):
+        if self.frozen and not frozen_ui: self.unfreeze()
+        self.after(100, self.check_freeze)
+    
+    def freeze(self, subtitle):
+        self.autocurator.curate_btn["state"] = "disabled"
+        self.autocurator.reload_btn["state"] = "disabled"
+        self.downloader.download_btn["state"] = "disabled"
+        self.searcher.load_btn["state"] = "disabled"
+        self.searcher.search_btn["state"] = "disabled"
+        self.lister.find_btn["state"] = "disabled"
+        #self.lister.stxt.txt["state"] = "disabled"
+        
+        self.title(TITLE + " - " + subtitle)
+        
+        self.frozen = True
+    
+    def unfreeze(self):
+        self.autocurator.curate_btn["state"] = "normal"
+        self.autocurator.reload_btn["state"] = "normal"
+        self.downloader.download_btn["state"] = "normal"
+        self.searcher.load_btn["state"] = "normal"
+        self.searcher.search_btn["state"] = "normal"
+        self.lister.find_btn["state"] = "normal"
+        #self.lister.stxt.txt["state"] = "normal"
+        
+        self.title(TITLE)
+        
+        self.frozen = False
     
     def show_help(self):
         if not self.help:
@@ -116,15 +174,17 @@ class Mainframe(tk.Tk):
             fpclib.DEBUG_LEVEL = -1
     
     def exit_window(self):
-        self.save()
-        self.destroy()
+        if not frozen_ui:
+            # Python can't stop a thread easily, so make sure nothing is running before closing.
+            self.save()
+            self.destroy()
     
     def save(self):
         autocurator = {}
         downloader = {}
         searcher = {}
         
-        data = {"autocurator": autocurator, "downloader": downloader, "searcher": searcher, "debug_level": self.debug_level.get()}
+        data = {"autocurator": autocurator, "downloader": downloader, "searcher": searcher, "debug_level": self.debug_level.get(), "tab": self.tabs.select()}
         
         # Save autocurator data
         autocurator["output"] = self.autocurator.output.get()
@@ -135,7 +195,7 @@ class Mainframe(tk.Tk):
         autocurator["clear"] = self.autocurator.clear.get()
         autocurator["show_done"] = self.autocurator.show_done.get()
         
-        autocurator["urls"] = self.autocurator.stxt.txt.get("1.0", "end")
+        autocurator["urls"] = self.autocurator.stxt.txt.get("0.0", "end").strip()
         
         # Save downloader data
         downloader["output"] = self.downloader.output.get()
@@ -145,7 +205,7 @@ class Mainframe(tk.Tk):
         downloader["clear"] = self.downloader.clear.get()
         downloader["show_done"] = self.downloader.show_done.get()
         
-        downloader["urls"] = self.downloader.stxt.txt.get("1.0", "end")
+        downloader["urls"] = self.downloader.stxt.txt.get("0.0", "end").strip()
         
         # Save searcher data
         searcher["database"] = self.searcher.database.get()
@@ -158,14 +218,19 @@ class Mainframe(tk.Tk):
         searcher["exact_url"] = self.searcher.exact_url.get()
         searcher["difflib"] = self.searcher.difflib.get()
         
-        searcher["titles"] = self.searcher.stxta.txt.get("1.0", "end")
-        searcher["urls"] = self.searcher.stxtb.txt.get("1.0", "end")
+        searcher["titles"] = self.searcher.stxta.txt.get("0.0", "end").strip()
+        searcher["urls"] = self.searcher.stxtb.txt.get("0.0", "end").strip()
         
         with open("data.json", "w") as file: json.dump(data, file)
     
     def load(self):
         try:
             with open("data.json", "r") as file: data = json.load(file)
+            
+            # Set basic data
+            self.debug_level.set(data["debug_level"])
+            self.tabs.select(data["tab"])
+            
             
             autocurator = data["autocurator"]
             downloader = data["downloader"]
@@ -181,7 +246,7 @@ class Mainframe(tk.Tk):
             self.autocurator.show_done.set(autocurator["show_done"])
             
             txt = self.autocurator.stxt.txt
-            txt.delete("1.0", "end")
+            txt.delete("0.0", "end")
             txt.insert("1.0", autocurator["urls"])
             
             # Save downloader data
@@ -193,7 +258,7 @@ class Mainframe(tk.Tk):
             self.downloader.show_done.set(downloader["show_done"])
             
             txt = self.downloader.stxt.txt
-            txt.delete("1.0", "end")
+            txt.delete("0.0", "end")
             txt.insert("1.0", downloader["urls"])
             
             # Save searcher data
@@ -208,19 +273,20 @@ class Mainframe(tk.Tk):
             self.searcher.difflib.set(searcher["difflib"])
             
             txt = self.searcher.stxta.txt
-            txt.delete("1.0", "end")
+            txt.delete("0.0", "end")
             txt.insert("1.0", searcher["titles"])
             
             txt = self.searcher.stxtb.txt
-            txt.delete("1.0", "end")
+            txt.delete("0.0", "end")
             txt.insert("1.0", searcher["urls"])
             
-        except FileNotFoundError: pass
+        except (FileNotFoundError, KeyError): pass
 
 class Help(tk.Toplevel):
     def __init__(self, parent):
         # Create window
         super().__init__(bg="white")
+        self.title(TITLE + " - Help")
         self.minsize(445, 400)
         self.geometry("745x700")
         self.protocol("WM_DELETE_WINDOW", self.exit_window)
@@ -228,7 +294,7 @@ class Help(tk.Toplevel):
         
         # Create htmlframe for displaying help information
         txt = tkhtml.HtmlFrame(self, vertical_scrollbar="auto", horizontal_scrollbar="auto")
-        txt.set_content(fpclib.read("help.html"))
+        with open("help.html", "r") as file: txt.set_content(file.read())
         txt.pack(expand=True, fill="both")
     
     def exit_window(self):
@@ -250,8 +316,8 @@ class AutoCurator(tk.Frame):
         self.output.pack(side="left", fill="x", expand=True)
         folder = ttk.Button(tframe, text="...", width=3, command=self.folder)
         folder.pack(side="left")
-        curate = ttk.Button(tframe, text="Curate", command=self.curate)
-        curate.pack(side="left", padx=5)
+        self.curate_btn = ttk.Button(tframe, text="Curate", command=self.curate)
+        self.curate_btn.pack(side="left", padx=5)
         
         # Create checkboxes
         cframe = tk.Frame(self, bg="white")
@@ -288,8 +354,8 @@ class AutoCurator(tk.Frame):
         defcount = tk.Label(dframe, bg="white", textvariable=self.defcount)
         defcount.pack(side="left")
         
-        reload = ttk.Button(dframe, text="Reload", command=self.reload)
-        reload.pack(side="left", padx=5)
+        self.reload_btn = ttk.Button(dframe, text="Reload", command=self.reload)
+        self.reload_btn.pack(side="left", padx=5)
         self.reload()
         
         # Create panel for inputting urls
@@ -343,16 +409,21 @@ class AutoCurator(tk.Frame):
         self.defs = AutoCurator.get_defs()
         self.defcount.set(f"{len(self.defs)} site defintitions found")
     
-    def curate(self):
-        txt = self.stxt.txt
-        # Get urls and curate them with all site definitions
-        urls = [i.strip() for i in txt.get("1.0", "end").replace("\r\n", "\n").replace("\r", "\n").split("\n") if i.strip()]
-        
+    def s_curate(output, defs, urls, titles, save, ignore_errs):
         cwd = os.getcwd()
-        fpclib.make_dir(self.output.get(), True)
-        errs = fpclib.curate_regex(urls, self.defs, use_title=self.titles.get(), save=self.save.get(), ignore_errs=self.silent.get())
+        fpclib.make_dir(output, True)
+        errs = fpclib.curate_regex(urls, defs, use_title=titles, save=save, ignore_errs=ignore_errs)
         os.chdir(cwd)
         
+        return errs
+    
+    def i_curate(self):
+        txt = self.stxt.txt
+        # Get urls and curate them with all site definitions
+        urls = [i.strip() for i in txt.get("0.0", "end").replace("\r\n", "\n").replace("\r", "\n").split("\n") if i.strip()]
+        
+        errs = AutoCurator.s_curate(self.output.get(), self.defs, urls, self.titles.get(), self.save.get(), self.silent.get())
+    
         if self.show_done.get():
             if errs:
                 if len(errs) == len(urls):
@@ -363,9 +434,15 @@ class AutoCurator(tk.Frame):
                 tkm.showinfo(message=f"Successfully curated {len(urls)} urls.")
             
         if self.clear.get():
-            txt.delete("1.0", "end")
+            txt.delete("0.0", "end")
             print(errs)
             if errs: txt.insert("1.0", "\n".join([i for i, e, s in errs]))
+        
+        unfreeze()
+    
+    def curate(self):
+        freeze("AutoCurating URLs")
+        threading.Thread(target=self.i_curate, daemon=True).start()
 
 class Downloader(tk.Frame):
     def __init__(self):
@@ -382,8 +459,8 @@ class Downloader(tk.Frame):
         self.output.pack(side="left", fill="x", expand=True)
         folder = ttk.Button(tframe, text="...", width=3, command=self.folder)
         folder.pack(side="left")
-        download = ttk.Button(tframe, text="Download", command=self.download)
-        download.pack(side="left", padx=5)
+        self.download_btn = ttk.Button(tframe, text="Download", command=self.download)
+        self.download_btn.pack(side="left", padx=5)
         
         # Create checkboxes
         cframe = tk.Frame(self, bg="white")
@@ -417,10 +494,10 @@ class Downloader(tk.Frame):
             self.output.delete(0, "end")
             self.output.insert(0, folder)
     
-    def download(self):
+    def i_download(self):
         txt = self.stxt.txt;
         try:
-            links = [i.strip() for i in txt.get("1.0", "end").replace("\r\n", "\n").replace("\r", "\n").split("\n") if i.strip()]
+            links = [i.strip() for i in txt.get("0.0", "end").replace("\r\n", "\n").replace("\r", "\n").split("\n") if i.strip()]
             if links:
                 errs = fpclib.download_all(links, self.output.get() or "output", not self.original.get(), self.keep_vars.get(), True)
                 if self.show_done.get():
@@ -433,15 +510,21 @@ class Downloader(tk.Frame):
                         tkm.showinfo(message=f"Successfully downloaded {len(links)} files.")
                     
                 if self.clear.get():
-                    txt.delete("1.0", "end")
+                    txt.delete("0.0", "end")
                     if errs:
                         txt.insert("1.0", "\n".join([i for i, e in errs]))
             else:
                 tkm.showinfo(message="You must specify at least one url to download.")
         except Exception as e:
-            print("[ERR]  Failed to download urls, err ", end="")
+            print("[ERR]  Failed to download urls, err ")
             traceback.print_exc()
             tkm.showerror(message=f"Failed to download urls.\n{e.__class__.__name__}: {str(e)}")
+        
+        unfreeze()
+    
+    def download(self):
+        freeze("Downloading URLs")
+        threading.Thread(target=self.i_download, daemon=True).start()
 
 class Searcher(tk.Frame):
     def __init__(self):
@@ -457,10 +540,10 @@ class Searcher(tk.Frame):
         self.database.pack(side="left", fill="x", expand=True)
         db = ttk.Button(tframe, text="...", width=3, command=self.get_database)
         db.pack(side="left", padx=(0, 5))
-        load = ttk.Button(tframe, text="Load", command=self.load)
-        load.pack(side="left")
-        search = ttk.Button(tframe, text="Search", command=self.search)
-        search.pack(side="left", padx=5)
+        self.load_btn = ttk.Button(tframe, text="Load", command=self.load)
+        self.load_btn.pack(side="left")
+        self.search_btn = ttk.Button(tframe, text="Search", command=self.search)
+        self.search_btn.pack(side="left", padx=5)
         
         # Create entries for regexs
         rframe = tk.Frame(self, bg="white")
@@ -515,10 +598,9 @@ class Searcher(tk.Frame):
             self.database.delete(0, "end")
             self.database.insert(0, db)
     
-    def load(self):
+    def s_load(dbloc, silent=False):
         try:
             # Acquire the database!
-            dbloc = self.database.get()
             db = sqlite3.connect(dbloc)
             c = db.cursor()
             
@@ -541,46 +623,30 @@ class Searcher(tk.Frame):
                 ))
             
             fpclib.write("search/database.tsv", "\n".join(data))
-        except:
-            print("[ERR]  Failed to load database, err ", end="")
+            return True
+        except Exception as e:
+            print("[ERR]  Failed to load database, err ")
             traceback.print_exc()
-            tkm.showerror(message=f"Failed to load database. Ensure the the database provided is valid.\n{e.__class__.__name__}: {str(e)}")
+            if not silent: tkm.showerror(message=f"Failed to load database. Ensure the the database provided is valid.\n{e.__class__.__name__}: {str(e)}")
+        finally:
+            if not silent: unfreeze()
+        
+        return False
+    
+    def load(self):
+        freeze("Loading Database")
+        threading.Thread(target=lambda: Searcher.s_load(self.database.get(), False), daemon=True).start()
     
     def search(self):
-        print('[INFO] Initiating search')
+        freeze("Bulk Searching")
+        # Get input data
         try:
-            # Get input data
-            period = time.time()
-            printfl('[INFO] Parsing input data...')
-            
             txta = self.stxta.txt
             txtb = self.stxtb.txt
             
-            titles = [i.strip() for i in txta.get("1.0", "end").replace("\r\n", "\n").replace("\r", "\n").split("\n") if i.strip()]
-            urls = [i.strip() for i in txtb.get("1.0", "end").replace("\r\n", "\n").replace("\r", "\n").split("\n") if i.strip()]
+            titles = [i.strip() for i in txta.get("0.0", "end").replace("\r\n", "\n").replace("\r", "\n").split("\n") if i.strip()]
+            urls = [i.strip() for i in txtb.get("0.0", "end").replace("\r\n", "\n").replace("\r", "\n").split("\n") if i.strip()]
             #if urls and len(titles) != len(urls):
-            if len(titles) != len(urls):
-                print('Failed (input count mismatch)')
-                tkm.showerror(message=f"Input data count mismatch: # of titles is {len(titles)}, while # of urls is {len(urls)}.")
-                return
-            input_count = len(titles)
-            if input_count == 0:
-                print('Failed (no data)')
-                tkm.showerror(message=f"No input data to search with; you must provide at least one title and url to search with.")
-                return
-            
-            # Get source regex
-            try: src_regex = re.compile(self.sources.get())
-            except:
-                print('Failed (incorrect source regex)')
-                tkm.showerror(message=f"Your source regex is formatted incorrectly.")
-                return
-            # Get devpubs regex
-            try: dp_regex = re.compile(self.devpubs.get())
-            except:
-                print('Failed (incorrect dev/pub regex)')
-                tkm.showerror(message=f"Your developer/publisher regex is formatted incorrectly.")
-                return
             
             # Get options
             PRIORITIES = self.priorities.get()
@@ -589,44 +655,84 @@ class Searcher(tk.Frame):
             EXACT_URL_CHECK = self.exact_url.get()
             DIFFLIB = self.difflib.get()
             
+            threading.Thread(target=lambda: Searcher.s_search(titles, urls, self.database.get(), self.sources.get(), self.devpubs.get(), PRIORITIES, LOG, STRIP_SUBTITLES, EXACT_URL_CHECK, DIFFLIB), daemon=True).start()
+        except Exception as e:
+            print("Failed to start search, err ")
+            traceback.print_exc()
+            tkm.showerror(message=f"Failed to get input data.\n{e.__class__.__name__}: {str(e)}")
+    
+    def s_search(titles, urls, dbloc, src_regex_str, dp_regex_str, PRIORITIES, LOG, STRIP_SUBTITLES, EXACT_URL_CHECK, DIFFLIB, silent_=False):
+        try:
+            period = time.time()
+            printfl('[INFO] Parsing input data...')
+            
+            if len(titles) != len(urls):
+                print('Failed (input count mismatch)')
+                if not silent: tkm.showerror(message=f"Input data count mismatch: # of titles is {len(titles)}, while # of urls is {len(urls)}.")
+                return
+            input_count = len(titles)
+            if input_count == 0:
+                print('Failed (no data)')
+                if not silent: tkm.showerror(message=f"No input data to search with; you must provide at least one title and url to search with.")
+                return
+            
             # Format input
             for i in range(input_count):
                 title = titles[i]
                 if STRIP_SUBTITLES:
                     colon = title.find(':')
                     title = title[0, colon]
-                titles[i] = AM_PATTERN.sub('', title)
+                titles[i] = AM_PATTERN.sub('', title).lower()
+            
+            # Get source regex
+            try: src_regex = re.compile(src_regex_str, re.I)
+            except:
+                print('Failed (incorrect source regex)')
+                if not silent: tkm.showerror(message=f"Your source regex is formatted incorrectly.")
+                return
+            # Get devpubs regex
+            try: dp_regex = re.compile(dp_regex_str, re.I)
+            except:
+                print('Failed (incorrect dev/pub regex)')
+                if not silent: tkm.showerror(message=f"Your developer/publisher regex is formatted incorrectly.")
+                return
             
             print('Done (%.3f secs)' % (time.time() - period))
-            
-            
             
             # Check for duplicates
             period = time.time()
             print('[INFO] Checking for duplicates')
             duplicates = set()
             for i, title in enumerate(titles):
-                print('       %d/%d - %d%% Complete' % (i, input_count, int(100 * i / input_count)), end='\r')
+                print('         %d/%d - %d%% Complete' % (i, input_count, int(100 * i / input_count)), end='\r')
                 if titles.count(title) > 1: duplicates.add(i)
             
-            print('       %d/%d - %d%% Complete (%.3f secs)' % (input_count, input_count, 100, time.time() - period))
-            print('       %d duplicates found.' % (len(duplicates)))
+            print('         %d/%d - %d%% Complete (%.3f secs)' % (input_count, input_count, 100, time.time() - period))
+            print('         %d duplicates found.' % (len(duplicates)))
             
             
             
             # Load the database
             period = time.time()
             printfl('[INFO] Loading database...')
+            fpclib.DEBUG_LEVEL, dl = 0, fpclib.DEBUG_LEVEL
             try:
                 raw_data = fpclib.read("search/database.tsv")
             except:
-                try:
-                    print('Failed')
-                    print('[INFO] Attempting to load external database')
-                    self.load()
-                    data = fpclib.read("search/database.tsv")
-                except:
+                if dbloc:
+                    try:
+                        print('Failed')
+                        printfl('[INFO] Attempting to load from external database...')
+                        if Searcher.s_load(dbloc, silent_): raw_data = fpclib.read("search/database.tsv")
+                    except Exception as e:
+                        print("Failed (bad read), err")
+                        traceback.print_exc()
+                        if not silent_: tkm.showerror(message=f"Failed to read database.\n{e.__class__.__name__}: {str(e)}")
+                        return
+                else:
+                    print('Failed (No database)')
                     return
+            fpclib.DEBUG_LEVEL = dl
             
             # Split database into full data
             data = [i.split("\t") for i in raw_data.split("\n")]
@@ -674,7 +780,7 @@ class Searcher(tk.Frame):
                 return False # This entry does not match with anything
             
             for i, entry in enumerate(data):
-                print('       %d/%d - %d%% Complete' % (i, data_count, int(100 * i / data_count)), end='\r')
+                print('         %d/%d - %d%% Complete' % (i, data_count, int(100 * i / data_count)), end='\r')
                 
                 sdp_match = check_sdp_match(entry)
                 title_match = check_title_match(entry)
@@ -698,10 +804,10 @@ class Searcher(tk.Frame):
                 # Add this entry's source to data_sources
                 if entry[6]: data_sources.add(entry[6])
             
-            print('       %d/%d - %d%% Complete (%.3f secs)' % (data_count, data_count, 100, time.time() - period))
-            print('       %d games match title' % (title_match_count))
-            print('       %d games match source/dev/pub' % (sdp_match_count))
-            print('       %d games match either' % (title_or_sdp_match_count))
+            print('         %d/%d - %d%% Complete (%.3f secs)' % (data_count, data_count, 100, time.time() - period))
+            print('         %d games match title' % (title_match_count))
+            print('         %d games match source/dev/pub' % (sdp_match_count))
+            print('         %d games match either' % (title_or_sdp_match_count))
             
             
             
@@ -710,8 +816,8 @@ class Searcher(tk.Frame):
             period_item = time.time()
             print('[INFO] Performing main search')
             
-            data_sources_str = "\n"+"\n".join(data_sources)
-            sdp_matches_str = "\n"+"\n".join(sdp_matches)
+            data_sources_str = "\n"+"\n".join(data_sources)+"\n"
+            sdp_matches_str = "\n"+"\n".join(sdp_matches)+"\n"
             
             duplicate = []
             
@@ -733,21 +839,21 @@ class Searcher(tk.Frame):
             
             priorities = []
             
-            for i in range(input_count):
-                print('       %d/%d - %d%% Complete (last took %.3f secs)' % (i, input_count, int(100 * i / input_count), time.time() - period_item), end='\r')
+            for item in range(input_count):
+                print('         %d/%d - %d%% Complete (last took %.3f secs)' % (item, input_count, int(100 * item / input_count), time.time() - period_item), end='\r')
                 period_item = time.time()
                 
-                # Duplicates get thrown out
-                if i in duplicates:
-                    duplicate.append(title + "\t" + url)
-                    priorities.append('-1.0')
-                    continue
-                
                 # Get title and url
-                title = titles[i]
-                url = urls[i]
+                title = titles[item]
+                url = urls[item]
                 line = title + "\t" + url
                 title_is_long = len(title) > 10
+                
+                # Duplicates get thrown out
+                if item in duplicates:
+                    duplicate.append(line)
+                    priorities.append('-1.0')
+                    continue
                 
                 if url and EXACT_URL_CHECK:
                     # Exact url matches
@@ -756,10 +862,11 @@ class Searcher(tk.Frame):
                         priorities.append('5.0')
                         continue
                     
-                    # Exact url matches ignoring protocol and other small data
+                    # Exact url matches ignoring protocol and extra source data
                     colon = url.find(':')
                     if colon != -1 and colon+3 < len(url):
-                        if url[colon+3] in data_sources_str:
+                        purl = url[colon+3:]
+                        if purl+" " in data_sources_str or purl+"\n" in data_sources_str:
                             partial_url_matches.append(line)
                             priorities.append('4.9')
                             continue
@@ -769,6 +876,8 @@ class Searcher(tk.Frame):
                     title_and_sdp_matches.append(line)
                     priorities.append('4.8')
                     continue
+                    
+                # Later maybe urls matching subfolders without the same domain?
                 
                 # Title starts another Title (and is >10 characters) that matches part of its source/developer/publisher
                 if title_is_long and "\n" + title in sdp_matches_str:
@@ -833,27 +942,44 @@ class Searcher(tk.Frame):
                 priorities.append(str(round(6 * metric - 2.1, 2)))
             
             time_took = time.time() - period
-            print('       %d/%d - %d%% Complete (%.3f secs) (avg %.3f secs)' % (input_count, input_count, 100, time_took, time_took / input_count))
+            print('         %d/%d - %d%% Complete (%.3f secs) (avg %.3f secs)' % (input_count, input_count, 100, time_took, time_took / input_count))
             # SUMMARY information
             probables = len(leftovers) + len(low_metric) + len(very_low_metric)
-            print('  ' + TEXTS['sum.priority'] % (probables, probables * 100 / input_count))
-            print('  ' + TEXTS['sum.priority2'] % (len(very_low_metric), len(very_low_metric) * 100 / input_count))
+            print('         ' + TEXTS['sum.priority'] % (probables, probables * 100 / input_count))
+            print('         ' + TEXTS['sum.priority2'] % (len(very_low_metric), len(very_low_metric) * 100 / input_count))
             print()
             
             # Save information!
             if PRIORITIES:
                 printfl("Writing priorities to output file...")
-                fpclib.write("search/priorities.tsv", '\n'.join(priorities))
+                fpclib.DEBUG_LEVEL, dl = 0, fpclib.DEBUG_LEVEL
+                try: fpclib.write("search/priorities.txt", '\n'.join(priorities))
+                except: fpclib.DEBUG_LEVEL = dl
                 print("Done")
+                
+                if not silent_: edit_file("search\\priorities.txt")
             if LOG:
                 printfl("Writing to log file...")
+                fpclib.DEBUG_LEVEL, dl = 0, fpclib.DEBUG_LEVEL
                 fpclib.make_dir("search")
-                with codecs.open("log.txt", 'w', 'utf-8') as log_file:
-                    # Sorter
+                fpclib.DEBUG_LEVEL = dl
+                with codecs.open("search/log.txt", 'w', 'utf-8') as log_file:
+                    # Sorter for later things
                     sorter = lambda e: e[1]
+                    # Sort normal things now
+                    duplicate.sort()
+            
+                    url_matches.sort()
+                    partial_url_matches.sort()
+                    title_and_sdp_matches.sort()
+                    
+                    title_starts_title_and_sdp_matches.sort()
+                    title_matches.sort()
+                    title_starts_title.sort()
+                    title_in_title.sort()
                     
                     # Header
-                    log_file.write(HEADER % (datetime.now().strftime('%Y-%m-%d')))
+                    log_file.write(TEXTS["header"] % (datetime.datetime.now().strftime('%Y-%m-%d')))
                     # Log duplicates
                     dups_text = TEXTS['info.numerics'] % (len(duplicate), 100 * len(duplicate) / input_count)
                     
@@ -915,9 +1041,11 @@ class Searcher(tk.Frame):
                     log_file.write(TEXTS['sum.totalgames'] % (input_count) + '\n')
                     log_file.write(TEXTS['line'])
                     log_file.write(TEXTS['sum.titlematch'] % (title_match_count) + '\n')
-                    if (not OPTIONS['-r']):
-                        log_file.write(TEXTS['sum.sourcematch'] % (sdp_match_count) + '\n')
-                        log_file.write(TEXTS['sum.either'] % (title_or_sdp_match_count) + '\n')
+                    
+                    #if (not OPTIONS['-r']):
+                    log_file.write(TEXTS['sum.sourcematch'] % (sdp_match_count) + '\n')
+                    log_file.write(TEXTS['sum.either'] % (title_or_sdp_match_count) + '\n')
+                    
                     log_file.write(TEXTS['line'])
                     log_file.write('\n')
                     log_file.write(TEXTS['sum.priority'] % (probables, probables * 100 / input_count) + '\n')
@@ -977,10 +1105,13 @@ class Searcher(tk.Frame):
                     log_file.write('\n'.join(['(%.3f) ' % (metric) + line for line, metric in very_low_metric]) + '\n')
                     
                 print('Done')
-        except:
-            print("[ERR]  Failed to load database, err ", end="")
+                if not silent_: edit_file("search\\log.txt")
+        except Exception as e:
+            print("[ERR]  Search failed, err ")
             traceback.print_exc()
             tkm.showerror(message=f"Search failed.\n{e.__class__.__name__}: {str(e)}")
+        
+        if not silent_: unfreeze()
 
 class Lister(tk.Frame):
     def __init__(self):
@@ -994,8 +1125,8 @@ class Lister(tk.Frame):
         c = ttk.Combobox(tframe, textvariable=self.choice, values=["Tags", "Platforms", "Game_Master_List", "Animation_Master_List"])
         c.pack(side="left")
         
-        find = ttk.Button(tframe, text="Find", command=self.find)
-        find.pack(side="left", padx=5)
+        self.find_btn = ttk.Button(tframe, text="Find", command=self.find)
+        self.find_btn.pack(side="left", padx=5)
         
         clear = ttk.Button(tframe, text="Clear", command=self.clear)
         clear.pack(side="left")
@@ -1003,14 +1134,19 @@ class Lister(tk.Frame):
         self.stxt = ScrolledText(self, width=10, height=10, wrap="none")
         self.stxt.pack(expand=True, fill="both", padx=5, pady=(0, 5))
     
-    def find(self):
+    def i_find(self):
         fpclib.debug("Getting all data from the {} page on the wiki", 1, self.choice.get())
         txt = self.stxt.txt
-        txt.delete("1.0", "end")
+        txt.delete("0.0", "end")
         txt.insert("end", "\n".join(fpclib.get_fpdata(self.choice.get())))
+        unfreeze()
+    
+    def find(self):
+        freeze("Gathering Wiki Data")
+        threading.Thread(target=self.i_find, daemon=True).start()
     
     def clear(self):
-        self.stxt.txt.delete("1.0", "end")
+        self.stxt.txt.delete("0.0", "end")
 
 class ScrolledText(tk.Frame):
     def __init__(self, parent, **kwargs):
@@ -1020,6 +1156,8 @@ class ScrolledText(tk.Frame):
         txtH = ttk.Scrollbar(self, orient="horizontal", command=self.txt.xview)
         self.txt.configure(yscrollcommand=txtV.set, xscrollcommand=txtH.set)
         
+        self.txt.delete("0.0", "end")
+        
         self.txt.grid(row=0, column=0, sticky="nsew")
         txtV.grid(row=0, column=1, sticky="ns")
         txtH.grid(row=1, column=0, sticky="ew")
@@ -1028,4 +1166,114 @@ class ScrolledText(tk.Frame):
         self.columnconfigure(0, weight=1)
 
 if __name__ == "__main__":
-    Mainframe().mainloop()
+    if len(sys.argv) == 1:
+        print("[INFO] Launching fpcurator GUI variant. Launch the program with the --help flag to see command line usage.")
+        MAINFRAME = Mainframe()
+        MAINFRAME.mainloop()
+    else:
+        # Command line args time!
+        parser = argparse.ArgumentParser(description="fpcurator is a bulk tool that makes certain curation tasks easier. There are four modes, -mC (default, autocurator mode), -mD (download urls mode), -mS (bulk search mode), and -mW (get wiki data mode). loc is a file containing urls to do something with, or if -l is set, a url. You can specify as many as you want.")
+        
+        parser.add_argument("-m", dest='mode', metavar='mode', help="Set the mode specifying what to do with the given urls.", default="C")
+        
+        parser.add_argument("-b", dest="level", metavar="level", type=int, help="Specifies the debug level to print log data with. Set to 0 for no debug information, -1 for all, 1 for minimum, and 2+ for debug information up to a specific tab level. Not applicable in W mode. Defaults to " + str(fpclib.DEBUG_LEVEL), default=fpclib.DEBUG_LEVEL)
+        parser.add_argument("-o", dest='output', metavar='folder', help='Specifies an output folder to put all output data in. This is "output" by default. Not applicable in S or W mode, as S outputs to the search folder and W outputs to the console.')
+        parser.add_argument("-l", action='store_true', help="Treat file locations as urls instead of files containing urls. Not applicable in W mode.")
+        parser.add_argument("-e", action='store_true', help="Causes the program to stop running the moment an error on the urls occurs. Only applicable in C and D mode.")
+        parser.add_argument("-x", action='store_true', help="If this is set and -e is not set, an errors.txt file will be generated with the urls that caused any errors. Only applicable in C and D mode.")
+        
+        parser.add_argument("-s", action='store_true', help="In C mode, prevents the autocurator from saving it's progress so that if it fails, it will resume where it left off with the same url input. In S mode, it says to strip subtitles from input data.")
+        parser.add_argument("-t", action='store_true', help="In C mode, Use randomly generated uuids instead of titles for the name of curation folders. Note that curations with the same title will not overwite each other by default.")
+        
+        parser.add_argument("-w", action='store_true', help="In D mode, instead of removing the web.archive.org part of urls, keep them in the original wayback folder structure.")
+        parser.add_argument("-k", action='store_true', help="In D mode, keeps any url variables at the end of urls being downloaded.")
+        
+        parser.add_argument("-S", help="In S mode, specifies the regex needed to match sources. When it is not specified, it matches nothing.", default="-^")
+        parser.add_argument("-P", help="In S mode, specifies the regex needed to match developers/publishers. When it is not specified, it matches nothing.", default="-^")
+        parser.add_argument("-D", action='store_true', help='In S mode, specifies a database to load before searching. You only need to specify this the first time you run a search, as the database is cached in a special format as "search/database.tsv"')
+        parser.add_argument("-p", action='store_true', help="In S mode, prevents the generation of a prorities.tsv file in the output directory.")
+        parser.add_argument("-r", action='store_true', help="In S mode, prevents the generation of a human readable log.txt file.")
+        parser.add_argument("-u", action='store_true', help="In S mode, disables the exact url check.")
+        parser.add_argument("-d", action='store_true', help="In S mode, causes the searcher to use the slow default python library difflib.")
+        
+        parser.add_argument("loc", nargs="+", help='In C, D, and S mode, this is a file containing urls to curate, or if -l is set, a url. You can specify as many as you want. In W mode, it is only a single item specifying the page containing wiki data to grab that will be printed to the console. In S mode (when -l is not set), you must have a line only containing a single "@" character in each file that specifies where the urls of the entries to search for begin. Everything before that character is interpreted as titles, and everything after is interpreted as urls for those titles. In S mode (when -l is set), every other item in the list should be a url and the others should be game titles.')
+        
+        args = parser.parse_args()
+        
+        # Check for invalid modes
+        if args.mode not in ["C", "D", "S", "W"]:
+            print("Invalid mode '" + args.mode + "'")
+            exit(1)
+        
+        
+        if args.mode == "W": # Wiki mode is the easiest, just get data
+            fpclib.DEBUG_LEVEL, dl = 0, fpclib.DEBUG_LEVEL
+            try:
+                print("\n".join(fpclib.get_fpdata(args.loc[0])))
+            finally:
+                fpclib.DEBUG_LEVEL = dl
+        else:
+            # In all other cases, we need to get the data
+            if args.l:
+                urls = [url.strip() for url in args.loc if url.strip()]
+            else:
+                if args.mode == "S":
+                    titles = []
+                    urls = []
+                    for loc in args.loc:
+                        try:
+                            raw = fpclib.read_lines(loc).split("@")
+                            
+                            titles.extend([url.strip() for url in raw[0] if url.strip()])
+                            urls.extend([url.strip() for url in raw[1] if url.strip()])
+                        except:
+                            fpclib.debug('[ERR]  Invalid file "{}", skipping', 1, loc)
+                else:
+                    urls = []
+                    for loc in args.loc:
+                        try:
+                            urls.extend([url.strip() for url in fpclib.read_lines(loc) if url.strip()])
+                        except:
+                            fpclib.debug('[ERR]  Invalid file "{}", skipping', 1, loc)
+            
+            # Then get output folder
+            output = args.output
+            if not output:
+                output = "search" if args.mode == "S" else "output"
+            
+            # Set debug level
+            fpclib.DEBUG_LEVEL, dl = args.level, fpclib.DEBUG_LEVEL
+            
+            # Now do stuff
+            try:
+                if args.mode == "C":
+                    # Autocurate urls (default mode)
+                    defs = AutoCurator.get_defs(True)
+                    if defs:
+                        errs = AutoCurator.s_curate(output, defs, urls, not args.t, not args.s, not args.e)
+                        if errs and args.x:
+                            fpclib.write("errors.txt", [i for i,e,d in errs])
+                            fpclib.debug('[INFO] Wrote errored urls to errors.txt file', 1)
+                    else:
+                        fpclib.debug('[ERR]  No site definitions found', 1)
+                    
+                elif args.mode == "D":
+                    # Download urls
+                    errs = fpclib.download_all(links, output, args.w, args.k, not args.e)
+                    if errs and args.x:
+                        fpclib.write("errors.txt", [i for i,e,d in errs])
+                        fpclib.debug('[INFO] Wrote errored urls to errors.txt file', 1)
+                    
+                elif args.mode == "S":
+                    # turn urls into titles and urls
+                    if args.l:
+                        if len(urls) % 2 == 1:
+                            print("[ERR]  Missing url for last title")
+                            exit(2)
+                        titles = urls[::2] # slice notation makes this easy peasy
+                        urls = urls[1::2]
+                    
+                    Searcher.s_search(titles, urls, args.D, args.S, args.P, not args.p, not args.r, args.s, not args.u, args.d, True)
+            finally:
+                fpclib.DEBUG_LEVEL = dl
+        
