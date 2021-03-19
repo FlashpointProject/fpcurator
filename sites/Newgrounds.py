@@ -15,6 +15,8 @@ HTML_EMBED = re.compile(r'var code = "(.*?)"; } else {')
 # This is a global variable that allows you to grab login-locked games. You'll have to replace it to get those games. You can comment it out if you like.
 TOKEN_HEADERS = {"COOKIE": "COOKIE_CONTAINING_TOKEN_GOES=HERE"}
 
+HTML_FILES = re.compile('.*\.(js|html|css|json)$')
+
 # This is the class to use to curate with. It is also required!
 class Newgrounds(fpclib.Curation):
     def parse(self, osoup):
@@ -175,6 +177,9 @@ class Newgrounds(fpclib.Curation):
                 fpclib.download_all([self.get_meta('embed_url')+'/index.html'])
             elif platform == 'Unity':
                 fpclib.download_all([self.get_meta('unity_file')])
+            
+            # Replace all instances of https with http
+            fpclib.replace(fpclib.scan_dir('', HTML_FILES)[0], 'https:', 'http:')
         else:
             super().get_files()
     

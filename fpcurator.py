@@ -9,6 +9,8 @@ import glob
 import sqlite3
 import threading
 import traceback
+import urllib
+import uuid
 import webbrowser
 import zipfile
 
@@ -525,6 +527,8 @@ class AutoCurator(tk.Frame):
     def get_defs(silent=False):
         defs = []
         priorities = {}
+
+        fpclib.delete("__pycache__")
     
         # Parse for site definitions
         fpclib.debug('Parsing for site definitions', 1)
@@ -535,10 +539,7 @@ class AutoCurator(tk.Frame):
                 name = py_file[py_file.rfind('\\')+1:-3]
                 m = __import__(name)
                 
-                priority = 0
-                try: priority = m.priority or 0
-                except: pass
-                priorities[name] = priority
+                priorities[name] = m.priority if hasattr(m, "priority") else 0
                 
                 defs.append((m.regex, getattr(m, name)))
                 fpclib.debug('Found class "{}"', 1, name)
@@ -588,7 +589,6 @@ class AutoCurator(tk.Frame):
             
         if self.clear.get():
             txt.delete("0.0", "end")
-            print(errs)
             if errs: txt.insert("1.0", "\n".join([i for i, e, s in errs]))
         
         unfreeze()

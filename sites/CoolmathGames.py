@@ -2,9 +2,11 @@
 # Some games can only be curated through https links.
 
 from __main__ import fpclib
-from __main__ import json, bs4, zipfile
+from __main__ import json, bs4, re, zipfile
 
 regex = 'coolmath-?games.com'
+
+HTML_FILES = re.compile('.*\.(js|html|css|json)$')
 
 class CoolmathGames(fpclib.Curation):
     def parse(self, soup):
@@ -92,4 +94,4 @@ class CoolmathGames(fpclib.Curation):
             fpclib.delete(local_zip)
         
         # Replace references to https in all content files
-        fpclib.replace(fpclib.scan_dir('', '.*\.(js|html|css|json)$')[0], 'https:', 'http:')
+        fpclib.replace(fpclib.scan_dir('', HTML_FILES)[0], 'https:', 'http:')
