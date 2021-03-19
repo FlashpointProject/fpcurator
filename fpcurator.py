@@ -139,8 +139,8 @@ TEXTS = {
     'p1.verylowmetric': 'Has a very low similarity metric (<75%)'
 }
 
-TITLE = "fpcurator v1.1.1"
-ABOUT = "Created by Zach K - v1.1.1"
+TITLE = "fpcurator v1.2.0"
+ABOUT = "Created by Zach K - v1.2.0"
 
 SITES_FOLDER = "sites"
 

@@ -3,6 +3,7 @@ errors.txt
 __pycache__
 *.pyc
 build
+build.bat
 dist
 data.json
 search
