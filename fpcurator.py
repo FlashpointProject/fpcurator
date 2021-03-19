@@ -16,11 +16,97 @@ import difflib
 try: import Levenshtein
 except: pass
 
+try: import win32gui, win32con # Best way to hide the console, but it isn't cross-platform, so it has a try-catch.
+except: pass
+
 import tkinterhtml as tkhtml
 import tkinter as tk
 import tkinter.ttk as ttk
 import tkinter.filedialog as tkfd
 import tkinter.messagebox as tkm
+
+from tooltip import Tooltip
+
+HELP_HTML = """<!doctype html>
+<html><body>
+    <h1><center>Help</center></h1>
+    <p>fpcurator is a collection of tools for performing certain curation tasks easier. There are four sub-tools available. Note that the tool may freeze while performing any task. All debug info on any task is printed to the console that can be shown by clicking "Toggle Log".</p>
+    
+    <h2>Auto Curator</h2>
+    <p>The Auto Curator tool generates a bunch of partial curations based upon a list of urls containing the games to curate. The list of curatable websites is limited the site definitions in the "sites" folder next to the program.<br>
+    &nbsp;<br>Here are a list of options:
+    <ul>
+        <li><b>Save</b> - When checked, the auto curator will save it's progress so if it fails from an error, the tool will resume where it left off given the same urls.</li>
+        <li><b>Use Titles</b> - When checked, the auto curator will use the titles of curated games instead of randomly generated UUIDs as the names of the folders the curations are put into.</li>
+        <li><b>Clear Done URLs</b> - When checked, the auto curator will clear any urls in the list when they are curated. Errored urls will remain in the list.</li>
+        <li><b>Notify When Done</b> - When checked, the auto curator will show a message box when it is done curating.</li>
+    </ul>
+    Here is some basic usage steps:
+    <ol>
+        <li>Select the options you want, specified by the list above, and set the output directory of these partial curations.</li>
+        <li>Paste the urls you want to curate into the text box, one per line.</li>
+        <li>Press the "Curate" button to start the curation process.</li>
+    </ol>
+    </p>
+    
+    <h2>Download URLs</h2>
+    <p>The Download URLs tool downloads and formats a list of files from a list of urls into a collection of organized folders inside the directory specified by "Output Folder". It works in a similar way to cURLsDownloader, but is powered by fpclib. Put all the urls you want to download into the textbox and press "Download".<br>
+    &nbsp;<br>Here are a list of options:
+    <ul>
+        <li><b>Delete "web.archive.org"</b> - When checked, the downloader will put all urls downloaded from the web archive back into their original domains.</li>
+        <li><b>Keep URLVars</b> - When checked, the downloader will append url vars present on links being downloaded to the end of the html file. This is only necessary when you have two links to the same webpage that generate different html due to the url vars.</li>
+        <li><b>Clear Done URLs</b> - When checked, the downloader will clear any urls in the list when they are downloaded. Errored urls will remain in the list.</li>
+        <li><b>Notify When Done</b> - When checked, the downloader will show a message box when it is done downloading.</li>
+    </ul>
+    Here is some basic usage steps:
+    <ol>
+        <li>Select the options you want, specified by the list above, and set the output directory of the downloaded folders and files.</li>
+        <li>Paste the urls you want to download into the text box, one per line.</li>
+        <li>Press the "Download" button to start the download process.</li>
+    </ol>
+    </p>
+    
+    <h2>Bulk Search Titles</h2>
+    <p>The Bulk Search Titles tool can take a list of titles and a list of urls for those titles and bulk check how likely it is those entries are in Flashpoint. You will need to load the Flashpoint database for it to check through, in addition to providing regexes that will be used to check if entries in Flashpoint have the right Source, Publisher, or Developer that would match a title in the list. Note that this will cache the database for later use, so if you want to reload it you'll need to either delete the file "search/database.tsv" or press "Load" on the database again.<br>
+    &nbsp;<br>Here are a list of options:
+    <ul>
+        <li><b>Priorities</b> - When checked, the searcher will generate a list of numeric priorities and print them into a file named "priorities.txt" next to the program. This is mainly used for copying into a spreadsheet.</li>
+        <li><b>Log</b> - When checked, the searcher will generate a more human readable log displaying how likely each it is those games are in Flashpoint.</li>
+        <li><b>Strip Subtitles</b> - When checked, titles will be stripped of subtitles when searching for them in Flashpoint.</li>
+        <li><b>Exact Url Matches</b> - When unchecked, the searcher will skip checking for exact url matches for a game match in Flashpoint. Normally an exact url match is a very good indicator if a game is curated, but this is optional in case multiple games are on the same url.</li>
+        <li><b>Use difflib</b> - When checked, the searcher will use the default python difflib instead of the fast and efficient python-Levenshtein.</li>
+    </ul>
+    Here is some basic usage steps:
+    <ol>
+        <li>Select the Flashpoint database, located in your Flashpoint folder under "/Data/flashpoint.sqlite".</li>
+        <li>Select the options you want, specified by the list above.</li>
+        <li>Type in a source regex that would match the source of any game in Flashpoint that comes from the same location as those in the list. The regex match is case-insensitive.</li>
+        <li>Type in a developer/publisher regex that would match the developer/publisher of any game in Flashpoint that comes from the same location as those in the list. Note that developers/publishers are stripped of all non-alphanumeric characters (except semicolons) and are set to lowercase ("Cool-Math-Games.com" becomes "coolmathgamescom"), so the match is case-insensitive.</li>
+        <li>Copy and paste the <b>TITLES</b> of entries to search with in the <b>LEFT</b> box, one per line.</li>
+        <li>Copy and paste the <b>URLS</b> of entries to search with in the <b>RIGHT</b> box, one per line.</li>
+        <li>Press the "Search" button to initiate the search. When the search is done the generated "log.txt" and/or "priorities.txt" files will be automatically opened if you chose to generate them.</li>
+    </ol>
+    Here's what each of the priorities mean:
+    <ul>
+    <table>
+        <tr><td><b> -1        </b></td><td>Duplicate</td></tr>
+        <tr><td><b>  5        </b></td><td>Exact url matches with the source of a game in Flashpoint</td></tr>
+        <tr><td><b>  4.9      </b></td><td>Exact url matches ignoring protocol and extra source data (like Via. Wayback)</td></tr>
+        <tr><td><b>  4.8      </b></td><td>Title matches with a game that is from the same source/developer/publisher</td></tr>
+        <tr><td><b>  4.3      </b></td><td>Title starts the title of a game from the same source/developer/publisher (and is >10 characters long)</td></tr>
+        <tr><td><b>  4.0      </b></td><td>Title matches with a game in Flashpoint (may not be accurate for common names of games like Chess)</td></tr>
+        <tr><td><b>  3.9      </b></td><td>Title starts the title of a game in Flashpoint (and is >10 characters long)</td></tr>
+        <tr><td><b>  3.8      </b></td><td>Title is in the title of a game in Flashpoint (and is >10 characters long)</td></tr>
+        <tr><td><b>  3.6-3.8  </b></td><td>This game has a very high (>95%) metric, meaning it matches with another title that probably has 1 or 2 letters different.</td></tr>
+        <tr><td><b>  3-3.6    </b></td><td>This game has a medium to high metric (85-95%), meaning it kind of matches with games in Flashpoint but not really.</td></tr>
+        <tr><td><b>  1-3      </b></td><td>Basically every other metric (60-85%). 60% is the highest match of garbage letters.</td></tr>
+    </table>
+    </ul>
+    </p>
+    
+    <h2>Wiki Data</h2>
+    <p>The Wiki Data tool provides you with the ability to get a list of all Tags, Platforms, Games, or Animations in Flashpoint. Just select the given page you want the data of and press "Find".</p>
+</body></html>"""
 
 HEADINGS = ['TABLE OF CONTENTS', 'SUMMARY', 'DUPLICATE NAMES', 'DEFINITELY IN FLASHPOINT', 'PROBABLY IN FLASHPOINT', 'MAYBE IN FLASHPOINT', 'PROBABLY NOT IN FLASHPOINT', 'DEFINITELY NOT IN FLASHPOINT']
 TEXTS = {
@@ -51,8 +137,8 @@ TEXTS = {
     'p1.verylowmetric': 'Has a very low similarity metric (<75%)'
 }
 
-TITLE = "fpcurator v1.1.0"
-ABOUT = "Created by Zach K - v1.1.0"
+TITLE = "fpcurator v1.1.1"
+ABOUT = "Created by Zach K - v1.1.1"
 
 SITES_FOLDER = "sites"
 
@@ -60,6 +146,10 @@ fpclib.DEBUG_LEVEL = 4
 
 AM_PATTERN = re.compile('[\W_]+')
 AMS_PATTERN = re.compile('([^\w;]|_)+')
+
+MAINFRAME = None
+try: CONSOLE = win32gui.GetForegroundWindow()
+except: pass
 
 def set_entry(entry, data):
     entry.delete(0, "end")
@@ -86,13 +176,14 @@ class Mainframe(tk.Tk):
     def __init__(self):
         # Create window
         super().__init__()
-        self.minsize(645, 600)
+        self.minsize(695, 650)
         self.title(TITLE)
         self.protocol("WM_DELETE_WINDOW", self.exit_window)
         
         # Add tabs
         self.tabs = ttk.Notebook(self)
         self.tabs.pack(expand=True, fill="both", padx=5, pady=5)
+        self.tabs.bind("<<NotebookTabChanged>>", self.tab_change)
         
         self.autocurator = AutoCurator()
         self.downloader = Downloader()
@@ -101,7 +192,7 @@ class Mainframe(tk.Tk):
         
         self.tabs.add(self.autocurator, text="Auto Curator")
         self.tabs.add(self.downloader, text="Download URLs")
-        self.tabs.add(self.searcher, text="Search")
+        self.tabs.add(self.searcher, text="Bulk Search Titles")
         self.tabs.add(self.lister, text="Wiki Data")
         
         # Add help and about label
@@ -112,18 +203,21 @@ class Mainframe(tk.Tk):
         label.pack(side="left")
         help_button = ttk.Button(bframe, text="Help", command=self.show_help)
         help_button.pack(side="left", padx=5)
+        log_button = ttk.Button(bframe, text="Toggle Log", command=self.toggle_log)
+        log_button.pack(side="left")
         
         # Add debug level entry
         self.debug_level = tk.StringVar()
         self.debug_level.set(str(fpclib.DEBUG_LEVEL))
         self.debug_level.trace("w", self.set_debug_level)
-        dlabel = ttk.Label(bframe, text="Debug Level: ")
+        dlabel = ttk.Label(bframe, text=" Debug Level: ")
         dlabel.pack(side="left")
         debug_level = ttk.Entry(bframe, textvariable=self.debug_level)
         debug_level.pack(side="left")
         
-        # Exists to prevent more than one help menu from opening at a time
+        # Exists to prevent more than one of a window from opening at a time
         self.help = None
+        self.log = True
         
         # Load GUI state from last close
         self.load()
@@ -131,6 +225,15 @@ class Mainframe(tk.Tk):
         # Setup timer for unfreeze events
         self.frozen = False
         self.after(100, self.check_freeze)
+    
+    def tab_change(self, event):
+        tab = self.tabs.select()
+        if tab == ".!autocurator":
+            self.autocurator.stxt.txt.focus_set()
+        elif tab == ".!downloader":
+            self.downloader.stxt.txt.focus_set()
+        elif tab == ".!searcher":
+            self.searcher.stxta.txt.focus_set()
     
     def check_freeze(self):
         if self.frozen and not frozen_ui: self.unfreeze()
@@ -166,6 +269,15 @@ class Mainframe(tk.Tk):
         if not self.help:
             self.help = Help(self)
     
+    def toggle_log(self):
+        if CONSOLE:
+            if self.log:
+                win32gui.ShowWindow(CONSOLE, win32con.SW_HIDE)
+                self.log = False
+            else:
+                win32gui.ShowWindow(CONSOLE, win32con.SW_SHOW)
+                self.log = True
+    
     def set_debug_level(self, name, index, mode):
         dl = self.debug_level.get()
         try:
@@ -175,7 +287,8 @@ class Mainframe(tk.Tk):
     
     def exit_window(self):
         if not frozen_ui:
-            # Python can't stop a thread easily, so make sure nothing is running before closing.
+            if not self.log: self.toggle_log()
+            # TODO: Python can't stop a thread easily, so make sure nothing is running before closing.
             self.save()
             self.destroy()
     
@@ -294,11 +407,43 @@ class Help(tk.Toplevel):
         
         # Create htmlframe for displaying help information
         txt = tkhtml.HtmlFrame(self, vertical_scrollbar="auto", horizontal_scrollbar="auto")
-        with open("help.html", "r") as file: txt.set_content(file.read())
+        txt.set_content(HELP_HTML)
         txt.pack(expand=True, fill="both")
     
     def exit_window(self):
         self.parent.help = None
+        self.destroy()
+
+class Log(tk.Toplevel):
+    def __init__(self, parent):
+        # Create window
+        super().__init__(bg="white")
+        self.title(TITLE + " - Log")
+        self.minsize(445, 400)
+        self.geometry("745x700")
+        self.protocol("WM_DELETE_WINDOW", self.exit_window)
+        self.parent = parent
+        
+        # Create text pane for showing log
+        self.stxt = ScrolledText(self, width=10, height=10, wrap="none", state="disabled")
+        self.stxt.pack(expand=True, fill="both")
+        
+        # Queue update checks
+        self.update = True
+        self.update_check()
+    
+    def update_check(self):
+        if self.update:
+            txt = self.stxt.txt
+            txt["state"] = "normal"
+            txt.delete("0.0", "end")
+            txt.insert("end", LOGGER.logged())
+            txt["state"] = "disabled"
+            self.update = False
+        self.parent.after(100, self.update_check)
+    
+    def exit_window(self):
+        self.parent.log = None
         self.destroy()
 
 class AutoCurator(tk.Frame):
@@ -340,10 +485,16 @@ class AutoCurator(tk.Frame):
         #silent.pack(side="left", padx=5)
         titles = tk.Checkbutton(cframe, bg="white", text="Use Titles", var=self.titles)
         titles.pack(side="left")
-        clear = tk.Checkbutton(cframe, bg="white", text="Clear URLs", var=self.clear)
+        clear = tk.Checkbutton(cframe, bg="white", text="Clear Done URLs", var=self.clear)
         clear.pack(side="left", padx=5)
-        show_done = tk.Checkbutton(cframe, bg="white", text='Show Done', var=self.show_done)
+        show_done = tk.Checkbutton(cframe, bg="white", text='Notify When Done', var=self.show_done)
         show_done.pack(side="left")
+        
+        Tooltip(save, text="When checked, the auto curator will save it's progress so if it fails from an error, the tool will resume where it left off given the same urls.")
+        #Tooltip(silent, text="")
+        Tooltip(titles, text="When checked, the auto curator will use the titles of curated games instead of randomly generated UUIDs as the names of the folders the curations are put into.")
+        Tooltip(clear, text="When checked, the auto curator will clear any urls in the list when they are curated. Errored urls will remain in the list.")
+        Tooltip(show_done, text="When checked, the auto curator will show a message box when it is done curating.")
         
         # Create site definition display
         dframe = tk.Frame(self, bg="white")
@@ -359,6 +510,8 @@ class AutoCurator(tk.Frame):
         self.reload()
         
         # Create panel for inputting urls
+        lbl = tk.Label(self, bg="white", text="  Put URLs to curate in this box:")
+        lbl.pack(fill="x")
         self.stxt = ScrolledText(self, width=10, height=10, wrap="none")
         self.stxt.pack(expand=True, fill="both", padx=5, pady=5)
     
@@ -474,16 +627,23 @@ class Downloader(tk.Frame):
         self.show_done = tk.BooleanVar()
         self.show_done.set(True)
         
-        original = tk.Checkbutton(cframe, bg="white", text='Remove "web.archive.org"', var=self.original)
+        original = tk.Checkbutton(cframe, bg="white", text='Delete "web.archive.org"', var=self.original)
         original.pack(side="left")
         keep_vars = tk.Checkbutton(cframe, bg="white", text="Keep URLVars", var=self.keep_vars)
         keep_vars.pack(side="left", padx=5)
-        clear = tk.Checkbutton(cframe, bg="white", text="Clear URLs", var=self.clear)
+        clear = tk.Checkbutton(cframe, bg="white", text="Clear Done URLs", var=self.clear)
         clear.pack(side="left")
-        show_done = tk.Checkbutton(cframe, bg="white", text='Show Done', var=self.show_done)
+        show_done = tk.Checkbutton(cframe, bg="white", text='Notify When Done', var=self.show_done)
         show_done.pack(side="left", padx=5)
         
+        Tooltip(original, text="When checked, the downloader will put all urls downloaded from the web archive back into their original domains.")
+        Tooltip(keep_vars, text="When checked, the downloader will append url vars present on links being downloaded to the end of the html file. This is only necessary when you have two links to the same webpage that generate different html due to the url vars.")
+        Tooltip(clear, text="When checked, the downloader will clear any urls in the list when they are downloaded. Errored urls will remain in the list.")
+        Tooltip(show_done, text="When checked, the downloader will show a message box when it is done downloading.")
+        
         # Create panel for inputting urls to download
+        lbl = tk.Label(self, bg="white", text="  Put URLs to download in this box:")
+        lbl.pack(fill="x")
         self.stxt = ScrolledText(self, width=10, height=10, wrap="none")
         self.stxt.pack(expand=True, fill="both", padx=5, pady=5)
     
@@ -582,7 +742,15 @@ class Searcher(tk.Frame):
         difflib = tk.Checkbutton(cframe, bg="white", text="Use difflib", var=self.difflib)
         difflib.pack(side="left")
         
+        Tooltip(priorities, text='When checked, the searcher will generate a list of numeric priorities and print them into a file named "priorities.txt" next to the program. This is mainly used for copying into a spreadsheet.')
+        Tooltip(log, text="When checked, the searcher will generate a more human readable log displaying how likely each it is those games are in Flashpoint.")
+        Tooltip(strip, text="When checked, titles will be stripped of subtitles when searching for them in Flashpoint.")
+        Tooltip(exact_url, text='When unchecked, the searcher will skip checking for exact url matches for a game match in Flashpoint. Normally an exact url match is a very good indicator if a game is curated, but this is optional in case multiple games are on the same url.')
+        Tooltip(difflib, text="When checked, the searcher will use the default python library difflib instead of the fast and efficient python-Levenshtein.")
+        
         # Panels
+        lbl = tk.Label(self, bg="white", text="Put TITLES in the LEFT box and URLS in the RIGHT.")
+        lbl.pack(fill="x")
         txts = tk.Frame(self, bg="white")
         txts.pack(expand=True, fill="both", padx=5, pady=(0, 5))
         
@@ -1122,7 +1290,7 @@ class Lister(tk.Frame):
         
         self.choice = tk.StringVar()
         self.choice.set("Tags")
-        c = ttk.Combobox(tframe, textvariable=self.choice, values=["Tags", "Platforms", "Game_Master_List", "Animation_Master_List"])
+        c = ttk.Combobox(tframe, textvariable=self.choice, values=["Tags", "Platforms", "Game Master List", "Animation Master List"])
         c.pack(side="left")
         
         self.find_btn = ttk.Button(tframe, text="Find", command=self.find)
@@ -1135,10 +1303,16 @@ class Lister(tk.Frame):
         self.stxt.pack(expand=True, fill="both", padx=5, pady=(0, 5))
     
     def i_find(self):
-        fpclib.debug("Getting all data from the {} page on the wiki", 1, self.choice.get())
         txt = self.stxt.txt
         txt.delete("0.0", "end")
-        txt.insert("end", "\n".join(fpclib.get_fpdata(self.choice.get())))
+        try:
+            data = fpclib.get_fpdata(self.choice.get().replace(" ", "_"))
+            if data:
+                txt.insert("end", "\n".join(data))
+            else:
+                tkm.showerror(message="Failed to get data from wiki.")
+        except Exception as e:
+            tkm.showerror(message="Failed to get data from wiki.")
         unfreeze()
     
     def find(self):
@@ -1151,6 +1325,7 @@ class Lister(tk.Frame):
 class ScrolledText(tk.Frame):
     def __init__(self, parent, **kwargs):
         super().__init__(parent)
+        
         self.txt = tk.Text(self, **kwargs)
         txtV = ttk.Scrollbar(self, orient="vertical", command=self.txt.yview)
         txtH = ttk.Scrollbar(self, orient="horizontal", command=self.txt.xview)
@@ -1169,6 +1344,7 @@ if __name__ == "__main__":
     if len(sys.argv) == 1:
         print("[INFO] Launching fpcurator GUI variant. Launch the program with the --help flag to see command line usage.")
         MAINFRAME = Mainframe()
+        MAINFRAME.toggle_log()
         MAINFRAME.mainloop()
     else:
         # Command line args time!
@@ -1222,10 +1398,10 @@ if __name__ == "__main__":
                     urls = []
                     for loc in args.loc:
                         try:
-                            raw = fpclib.read_lines(loc).split("@")
+                            raw = fpclib.read(loc).replace("\r\n", "\n").replace("\r", "\n").split("@")
                             
-                            titles.extend([url.strip() for url in raw[0] if url.strip()])
-                            urls.extend([url.strip() for url in raw[1] if url.strip()])
+                            titles.extend([url.strip() for url in raw[0].split("\n") if url.strip()])
+                            urls.extend([url.strip() for url in raw[1].split("\n") if url.strip()])
                         except:
                             fpclib.debug('[ERR]  Invalid file "{}", skipping', 1, loc)
                 else:
