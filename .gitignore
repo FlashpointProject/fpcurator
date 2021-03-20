@@ -1,10 +1,22 @@
-urls.txt
-errors.txt
+# Don't include compiled python stuff
 __pycache__
 *.pyc
+
+# Don't include build and dist data and files
+fpcurator.spec
 build
+build-all.py
 build.bat
 dist
+
+# Don't include python venv data
+Include
+Lib
+Scripts
+pyvenv.cfg
+
+# Don't include generated files from fpcurator
 data.json
+errors.txt
 search
 output

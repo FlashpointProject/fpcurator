@@ -3,22 +3,9 @@
 from __main__ import fpclib
 from __main__ import re
 
-regex = 'addictinggames.com'
+from __main__ import MONTHS
 
-MONTHS = {
-    "Jan": "01",
-    "Feb": "02",
-    "Mar": "03",
-    "Apr": "04",
-    "May": "05",
-    "Jun": "06",
-    "Jul": "07", 
-    "Aug": "08",
-    "Sep": "09",
-    "Oct": "10",
-    "Nov": "11",
-    "Dec": "12"
-}
+regex = 'addictinggames.com'
 
 TAGS = {
     "Shooting": "Action; Shooter",
@@ -36,6 +23,11 @@ TAGS = {
     "Card": "Simulation; Card",
     "Clicker": "Arcade; Clicker"
 }
+
+HTML_EMBED = """<body>
+    <iframe width="100%" height="100%" src="%s"></iframe>
+</body>
+"""
 
 DATA_PARSER = re.compile("type: '(.*?)',\s*source: '(.*?)'")
 MARKUP_MOVIE = re.compile('<param *name="movie" *value="(.*?)"')
@@ -76,7 +68,8 @@ class AddictingGames(fpclib.Curation):
             # This is an HTML5 game
             self.platform = "HTML5"
             self.app = fpclib.BASILISK
-            self.if_url = url
+            self.if_url = fpclib.normalize(if_url, keep_vars=True)
+            self.if_file = fpclib.normalize(if_url)
             self.cmd = fpclib.normalize(self.src)
         elif data[1] == "markup":
             # Markup games are special
@@ -99,10 +92,12 @@ class AddictingGames(fpclib.Curation):
 
     def get_files(self):
         if self.platform == "HTML5":
-            # Create html file for game
-            fpclib.write(self.cmd[7:], fpclib.read_url(self.if_url))
+            # Download iframe file
+            fpclib.download_all((self.if_url,))
             # Replace all references to https with http
-            fpclib.replace(self.cmd[7:], "https:", "http:")
+            fpclib.replace(self.if_file[7:], "https:", "http:")
+            # Create html file for game
+            fpclib.write(self.cmd[7:], HTML_EMBED % self.if_file)
         else:
             # Flash games are downloaded normally
             super().get_files()

@@ -29,6 +29,21 @@ import tkinter.messagebox as tkm
 
 from tooltip import Tooltip
 
+MONTHS = {
+    "Jan": "01",
+    "Feb": "02",
+    "Mar": "03",
+    "Apr": "04",
+    "May": "05",
+    "Jun": "06",
+    "Jul": "07", 
+    "Aug": "08",
+    "Sep": "09",
+    "Oct": "10",
+    "Nov": "11",
+    "Dec": "12"
+}
+
 HELP_HTML = """<!doctype html>
 <html><body>
     <h1><center>Help</center></h1>
@@ -618,14 +633,19 @@ class Downloader(tk.Frame):
         # Create checkboxes
         cframe = tk.Frame(self, bg="white")
         cframe.pack(padx=5)
+        c2frame = tk.Frame(self, bg="white")
+        c2frame.pack(padx=5, pady=5)
         
-        self.original = tk.BooleanVar()
-        self.original.set(True)
         self.keep_vars = tk.BooleanVar()
         self.clear = tk.BooleanVar()
         self.clear.set(True)
         self.show_done = tk.BooleanVar()
         self.show_done.set(True)
+
+        self.original = tk.BooleanVar()
+        self.original.set(True)
+        self.replace_https = tk.BooleanVar()
+        self.replace_https.set(True)
         
         original = tk.Checkbutton(cframe, bg="white", text='Delete "web.archive.org"', var=self.original)
         original.pack(side="left")

@@ -2,22 +2,9 @@
 from __main__ import fpclib
 from __main__ import bs4, re, urllib, uuid
 
-regex = 'kongregate.com'
+from __main__ import MONTHS
 
-MONTHS = {
-    "Jan": "01",
-    "Feb": "02",
-    "Mar": "03",
-    "Apr": "04",
-    "May": "05",
-    "Jun": "06",
-    "Jul": "07", 
-    "Aug": "08",
-    "Sep": "09",
-    "Oct": "10",
-    "Nov": "11",
-    "Dec": "12"
-}
+regex = 'kongregate.com'
 
 IF_URL = re.compile('[\'"]iframe_url[\'"]:[\'"](.*?)[\'"]')
 SWF_URL = re.compile('[\'"]swfurl[\'"]:[\'"](.*?)[\'"]')
@@ -100,6 +87,7 @@ class Kongregate(fpclib.Curation):
             self.app = fpclib.BASILISK
             self.cmd = fpclib.normalize(self.src)
             self.if_url = fpclib.normalize(if_url, keep_vars=True)
+            self.if_file = fpclib.normalize(if_url)
             self.size = SIZE.search(if_script)
     
     def get_files(self):
@@ -107,9 +95,9 @@ class Kongregate(fpclib.Curation):
             # Download iframe that ought to be embedded
             fpclib.download_all((self.if_url,))
             # Replace all references to https with http
-            fpclib.replace(self.if_url[7:], "https:", "http:")
+            fpclib.replace(self.if_file[7:], "https:", "http:")
             # Create file to embed swf
-            fpclib.write(self.cmd[7:], HTML_EMBED % (self.title, self.size[1], self.size[2], fpclib.normalize(self.if_url, keep_vars=True)))
+            fpclib.write(self.cmd[7:], HTML_EMBED % (self.title, self.size[1], self.size[2], self.if_file))
         else:
             # Flash games are downloaded normally
             super().get_files()
