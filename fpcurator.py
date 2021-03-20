@@ -1,3 +1,9 @@
+import tkinter as tk
+import tkinter.ttk as ttk
+import tkinter.filedialog as tkfd
+import tkinter.messagebox as tkm
+import tkinterweb as tkw
+
 import fpclib
 import os, sys, time
 import re, json, bs4
@@ -20,12 +26,6 @@ except: pass
 
 try: import win32gui, win32con # Best way to hide the console, but it isn't cross-platform, so it has a try-catch.
 except: pass
-
-import tkinterhtml as tkhtml
-import tkinter as tk
-import tkinter.ttk as ttk
-import tkinter.filedialog as tkfd
-import tkinter.messagebox as tkm
 
 from tooltip import Tooltip
 
@@ -154,8 +154,8 @@ TEXTS = {
     'p1.verylowmetric': 'Has a very low similarity metric (<75%)'
 }
 
-TITLE = "fpcurator v1.3.0"
-ABOUT = "Created by Zach K - v1.3.0"
+TITLE = "fpcurator v1.3.1"
+ABOUT = "Created by Zach K - v1.3.1"
 
 SITES_FOLDER = "sites"
 
@@ -423,8 +423,8 @@ class Help(tk.Toplevel):
         self.parent = parent
         
         # Create htmlframe for displaying help information
-        txt = tkhtml.HtmlFrame(self, vertical_scrollbar="auto", horizontal_scrollbar="auto")
-        txt.set_content(HELP_HTML)
+        txt = tkw.HtmlFrame(self)
+        txt.load_html(HELP_HTML)
         txt.pack(expand=True, fill="both")
     
     def exit_window(self):
@@ -633,8 +633,8 @@ class Downloader(tk.Frame):
         # Create checkboxes
         cframe = tk.Frame(self, bg="white")
         cframe.pack(padx=5)
-        c2frame = tk.Frame(self, bg="white")
-        c2frame.pack(padx=5, pady=5)
+        #c2frame = tk.Frame(self, bg="white")
+        #c2frame.pack(padx=5, pady=5)
         
         self.keep_vars = tk.BooleanVar()
         self.clear = tk.BooleanVar()
