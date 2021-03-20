@@ -70,7 +70,7 @@ HELP_HTML = """<!doctype html>
     <p>The Download URLs tool downloads and formats a list of files from a list of urls into a collection of organized folders inside the directory specified by "Output Folder". It works in a similar way to cURLsDownloader, but is powered by fpclib. Put all the urls you want to download into the textbox and press "Download".<br>
     &nbsp;<br>Here are a list of options:
     <ul>
-        <li><b>Delete "web.archive.org"</b> - When checked, the downloader will put all urls downloaded from the web archive back into their original domains.</li>
+        <li><b>Rename "web.archive.org"</b> - When checked, the downloader will put all urls downloaded from the web archive back into their original domains.</li>
         <li><b>Keep URLVars</b> - When checked, the downloader will append url vars present on links being downloaded to the end of the html file. This is only necessary when you have two links to the same webpage that generate different html due to the url vars.</li>
         <li><b>Clear Done URLs</b> - When checked, the downloader will clear any urls in the list when they are downloaded. Errored urls will remain in the list.</li>
         <li><b>Notify When Done</b> - When checked, the downloader will show a message box when it is done downloading.</li>
@@ -154,8 +154,8 @@ TEXTS = {
     'p1.verylowmetric': 'Has a very low similarity metric (<75%)'
 }
 
-TITLE = "fpcurator v1.2.0"
-ABOUT = "Created by Zach K - v1.2.0"
+TITLE = "fpcurator v1.3.0"
+ABOUT = "Created by Zach K - v1.3.0"
 
 SITES_FOLDER = "sites"
 
@@ -647,7 +647,7 @@ class Downloader(tk.Frame):
         self.replace_https = tk.BooleanVar()
         self.replace_https.set(True)
         
-        original = tk.Checkbutton(cframe, bg="white", text='Delete "web.archive.org"', var=self.original)
+        original = tk.Checkbutton(cframe, bg="white", text='Rename "web.archive.org"', var=self.original)
         original.pack(side="left")
         keep_vars = tk.Checkbutton(cframe, bg="white", text="Keep URLVars", var=self.keep_vars)
         keep_vars.pack(side="left", padx=5)

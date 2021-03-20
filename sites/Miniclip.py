@@ -5,7 +5,7 @@ from __main__ import re, json
 regex = 'miniclip.com'
 
 HTML_EMBED = """<body>
-    <iframe width="100%" height="100%" src="%s"></iframe>
+    <iframe width="100%%" height="100%%" src="%s"></iframe>
 </body>
 """
 
@@ -45,7 +45,9 @@ class Miniclip(fpclib.Curation):
         # Replace all references to https with http
         fpclib.replace(self.if_url[7:], "https:", "http:")
         # Create file to embed swf
-        fpclib.write(self.cmd[7:], HTML_EMBED % self.if_url))
+        f = self.cmd[7:]
+        if f[-1] == "/": f += "index.html" 
+        fpclib.write(f, HTML_EMBED % self.if_url)
     
     def save_image(self, url, file_name):
         # Surround save image with a try catch loop as some logos cannot be gotten.

@@ -5,8 +5,9 @@ __pycache__
 # Don't include build and dist data and files
 fpcurator.spec
 build
-build-all.py
-build.bat
+.venv.bat
+_build.bat
+_finalize.py
 dist
 
 # Don't include python venv data

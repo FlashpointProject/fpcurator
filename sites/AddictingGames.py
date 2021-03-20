@@ -25,7 +25,7 @@ TAGS = {
 }
 
 HTML_EMBED = """<body>
-    <iframe width="100%" height="100%" src="%s"></iframe>
+    <iframe width="100%%" height="100%%" src="%s"></iframe>
 </body>
 """
 
@@ -35,6 +35,10 @@ MARKUP_MOVIE = re.compile('<param *name="movie" *value="(.*?)"')
 class AddictingGames(fpclib.Curation):
     def parse(self, soup):
         self.title = soup.find("h1").text
+
+        # Get Logo
+        try: self.logo = fpclib.normalize(soup.find("meta", property="og:image")["content"], keep_prot=True)
+        except: pass
 
         # Get Developer and set Publisher
         try: self.dev = soup.select_one(".author-span > strong").text
@@ -50,7 +54,10 @@ class AddictingGames(fpclib.Curation):
         except: pass
 
         # Get Description
-        self.desc = "\n\n".join(i.text for i in soup.select(".instru-blk > h5, .instru-blk > p")).strip()
+        desc = "\n\n".join(i.text for i in soup.select(".instru-blk > h5, .instru-blk > p")).strip()
+        if desc.endswith("Game Reviews"):
+            desc = desc[:-12].strip()
+        self.desc
 
         # Get Launch Command
         data = DATA_PARSER.search(soup.select(".node-game > script")[1].string)
@@ -68,8 +75,8 @@ class AddictingGames(fpclib.Curation):
             # This is an HTML5 game
             self.platform = "HTML5"
             self.app = fpclib.BASILISK
-            self.if_url = fpclib.normalize(if_url, keep_vars=True)
-            self.if_file = fpclib.normalize(if_url)
+            self.if_url = fpclib.normalize(url, keep_vars=True)
+            self.if_file = fpclib.normalize(url)
             self.cmd = fpclib.normalize(self.src)
         elif data[1] == "markup":
             # Markup games are special
@@ -97,7 +104,9 @@ class AddictingGames(fpclib.Curation):
             # Replace all references to https with http
             fpclib.replace(self.if_file[7:], "https:", "http:")
             # Create html file for game
-            fpclib.write(self.cmd[7:], HTML_EMBED % self.if_file)
+            f = self.cmd[7:]
+            if f[-1] == "/": f += "index.html" 
+            fpclib.write(f, HTML_EMBED % self.if_file)
         else:
             # Flash games are downloaded normally
             super().get_files()

@@ -97,7 +97,9 @@ class Kongregate(fpclib.Curation):
             # Replace all references to https with http
             fpclib.replace(self.if_file[7:], "https:", "http:")
             # Create file to embed swf
-            fpclib.write(self.cmd[7:], HTML_EMBED % (self.title, self.size[1], self.size[2], self.if_file))
+            f = self.cmd[7:]
+            if f[-1] == "/": f += "index.html" 
+            fpclib.write(f, HTML_EMBED % (self.title, self.size[1], self.size[2], self.if_file))
         else:
             # Flash games are downloaded normally
             super().get_files()
