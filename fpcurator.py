@@ -169,6 +169,8 @@ MAINFRAME = None
 try: CONSOLE = win32gui.GetForegroundWindow()
 except: pass
 
+DEFS_GOTTEN = False
+
 def set_entry(entry, data):
     entry.delete(0, "end")
     entry.insert(0, data)
@@ -511,14 +513,43 @@ class AutoCurator(tk.Frame):
             self.output.delete(0, "end")
             self.output.insert(0, folder)
     
-    def download_defs(silent=False):
-        pass
+    def download_defs(data, silent=False):
+        global DEFS_GOTTEN
+        DEFS_GOTTEN = True
+
+        # Delete sites folder if it exists
+        fpclib.delete(SITES_FOLDER)
+        # Get defs.txt
+        fpclib.write(SITES_FOLDER+"/defs.txt", data)
+        # Get definition file names from url
+        files = data.replace("\r\n", "\n").replace("\r", "\n").split("\n")[1:]
+        # Compile file names into urls to download
+        urls = ["https://github.com/FlashpointProject/fpcurator/raw/main/sites/" + f for f in files]
+        # Download urls
+        for i in range(len(urls)):
+            fpclib.write(SITES_FOLDER+"/"+files[i], fpclib.read_url(urls[i]))
+        
+        # Reload the program (because python doesn't like to load newly created python files as modules)
+        if not silent:
+            print(sys.argv)
+            exit(0)
 
     def get_defs(silent=False):
+        # Query to download site definitions from online.
+        global DEFS_GOTTEN
+        if not silent and not DEFS_GOTTEN:
+            DEFS_GOTTEN = True
+            data, odata = None, None
+            try:
+                data = fpclib.read_url("https://github.com/FlashpointProject/fpcurator/raw/main/sites/defs.txt")
+                odata = fpclib.read(SITES_FOLDER+"/defs.txt")
+            except: pass
+
+            if data != odata and tkm.askyesno(message="The Auto Curator's site definitions are out of date, would you like to redownload them from online? (you won't be able to use the Auto Curator fully without them)"):
+                AutoCurator.download_defs(data, silent)
+
         defs = []
         priorities = {}
-
-        fpclib.delete("__pycache__")
     
         # Parse for site definitions
         fpclib.debug('Parsing for site definitions', 1)
@@ -526,8 +557,9 @@ class AutoCurator(tk.Frame):
         sys.path.insert(0, SITES_FOLDER)
         for py_file in glob.glob(os.path.join(SITES_FOLDER, '*.py')):
             try:
-                name = py_file[py_file.rfind('\\')+1:-3]
+                name = py_file[py_file.replace('\\', '/').rfind('/')+1:-3]
                 m = __import__(name)
+                __reload__(m)
                 
                 priorities[name] = m.priority if hasattr(m, "priority") else 0
                 
@@ -538,18 +570,15 @@ class AutoCurator(tk.Frame):
                 print()
                 traceback.print_exc()
                 print()
-        
-        # Reload all definitions
-        for m in defs: __reload__(m)
+        sys.path.pop(0)
         
         fpclib.TABULATION -= 1
         
         # Print count of site definitions
         if defs: defs.sort(key=lambda x: priorities[x[1].__name__], reverse=True)
-        else: 
-            if not silent: fpclib.debug('No valid site-definitions were found', 1)
-            if tkm.askyesno(message="No Auto Curator site definitions were found, would you like to download them from online? (you won't be able to use the Auto Curator without them)"):
-                AutoCurator.download_defs(silent)
+        else:
+            if not silent:
+                fpclib.debug('No valid site-definitions were found', 1)
         
         return defs
     
@@ -1342,9 +1371,12 @@ class ScrolledText(tk.Frame):
 
 if __name__ == "__main__":
     if len(sys.argv) == 1:
-        print("[INFO] Launching fpcurator GUI variant. Launch the program with the --help flag to see command line usage.")
-        MAINFRAME = Mainframe()
-        MAINFRAME.mainloop()
+        try:
+            print("[INFO] Launching fpcurator GUI variant. Launch the program with the --help flag to see command line usage.")
+            MAINFRAME = Mainframe()
+            MAINFRAME.mainloop()
+        except Exception as e:
+            tkm.showerror(message=f"Fatal {e.__class__.__name__}: {str(e)}")
     else:
         # Command line args time!
         parser = argparse.ArgumentParser(description="fpcurator is a bulk tool that makes certain curation tasks easier. There are four modes, -mC (default, autocurator mode), -mD (download urls mode), -mS (bulk search mode), and -mW (get wiki data mode). loc is a file containing urls to do something with, or if -l is set, a url. You can specify as many as you want.")

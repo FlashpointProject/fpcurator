@@ -9,8 +9,7 @@ __pycache__
 fpcurator.spec
 build
 .venv.bat
-_build.bat
-_finalize.py
+_*
 dist
 
 # Don't include python venv data
