@@ -2,6 +2,9 @@
 __pycache__
 *.pyc
 
+# Don't include IDE stuff
+.vscode
+
 # Don't include build and dist data and files
 fpcurator.spec
 build

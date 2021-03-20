@@ -1,7 +1,7 @@
 # fpcurator
 fpcurator is a Python and fpclib powered tool for downloading urls, auto-generating curations, bulk searching for already curated games, and listing tags/platforms/games/animations for Flashpoint.
 
-If you don't want to install python to use fpcurator, check the releases page for a standalone executable.
+If you don't want to install python to use fpcurator, check the releases page for an executable. There are two zips, fpcurator.zip and fpcurator-standalone.zip; fpcurator.zip has a faster launch time but consists of many files, while fpcurator-standalone.zip consists of only an executable and the site definitions.
 
 ## Basic Usage
 
@@ -42,4 +42,5 @@ class WebsiteName(fpclib.Curation):
 ```
 
 For information on how to use beautifulsoup, check out the [official documentation](https://www.crummy.com/software/BeautifulSoup/bs4/doc/).
+
 For information on how to use fpclib, check out the [official documentation](https://xmgzx.github.io/apps/fpclib/).

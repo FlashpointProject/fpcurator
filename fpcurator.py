@@ -27,6 +27,7 @@ except: pass
 try: import win32gui, win32con # Best way to hide the console, but it isn't cross-platform, so it has a try-catch.
 except: pass
 
+from importlib import reload as __reload__
 from tooltip import Tooltip
 
 MONTHS = {
@@ -235,9 +236,13 @@ class Mainframe(tk.Tk):
         # Exists to prevent more than one of a window from opening at a time
         self.help = None
         self.log = True
+        self.toggle_log()
         
         # Load GUI state from last close
         self.load()
+        
+        # Get autocurator site definitions
+        self.autocurator.reload()
         
         # Setup timer for unfreeze events
         self.frozen = False
@@ -431,38 +436,6 @@ class Help(tk.Toplevel):
         self.parent.help = None
         self.destroy()
 
-class Log(tk.Toplevel):
-    def __init__(self, parent):
-        # Create window
-        super().__init__(bg="white")
-        self.title(TITLE + " - Log")
-        self.minsize(445, 400)
-        self.geometry("745x700")
-        self.protocol("WM_DELETE_WINDOW", self.exit_window)
-        self.parent = parent
-        
-        # Create text pane for showing log
-        self.stxt = ScrolledText(self, width=10, height=10, wrap="none", state="disabled")
-        self.stxt.pack(expand=True, fill="both")
-        
-        # Queue update checks
-        self.update = True
-        self.update_check()
-    
-    def update_check(self):
-        if self.update:
-            txt = self.stxt.txt
-            txt["state"] = "normal"
-            txt.delete("0.0", "end")
-            txt.insert("end", LOGGER.logged())
-            txt["state"] = "disabled"
-            self.update = False
-        self.parent.after(100, self.update_check)
-    
-    def exit_window(self):
-        self.parent.log = None
-        self.destroy()
-
 class AutoCurator(tk.Frame):
     def __init__(self):
         # Create panel
@@ -524,7 +497,6 @@ class AutoCurator(tk.Frame):
         
         self.reload_btn = ttk.Button(dframe, text="Reload", command=self.reload)
         self.reload_btn.pack(side="left", padx=5)
-        self.reload()
         
         # Create panel for inputting urls
         lbl = tk.Label(self, bg="white", text="  Put URLs to curate in this box:")
@@ -539,6 +511,9 @@ class AutoCurator(tk.Frame):
             self.output.delete(0, "end")
             self.output.insert(0, folder)
     
+    def download_defs(silent=False):
+        pass
+
     def get_defs(silent=False):
         defs = []
         priorities = {}
@@ -564,12 +539,17 @@ class AutoCurator(tk.Frame):
                 traceback.print_exc()
                 print()
         
+        # Reload all definitions
+        for m in defs: __reload__(m)
+        
         fpclib.TABULATION -= 1
         
         # Print count of site definitions
         if defs: defs.sort(key=lambda x: priorities[x[1].__name__], reverse=True)
         else: 
             if not silent: fpclib.debug('No valid site-definitions were found', 1)
+            if tkm.askyesno(message="No Auto Curator site definitions were found, would you like to download them from online? (you won't be able to use the Auto Curator without them)"):
+                AutoCurator.download_defs(silent)
         
         return defs
     
@@ -675,7 +655,7 @@ class Downloader(tk.Frame):
             self.output.insert(0, folder)
     
     def i_download(self):
-        txt = self.stxt.txt;
+        txt = self.stxt.txt
         try:
             links = [i.strip() for i in txt.get("0.0", "end").replace("\r\n", "\n").replace("\r", "\n").split("\n") if i.strip()]
             if links:
@@ -1364,7 +1344,6 @@ if __name__ == "__main__":
     if len(sys.argv) == 1:
         print("[INFO] Launching fpcurator GUI variant. Launch the program with the --help flag to see command line usage.")
         MAINFRAME = Mainframe()
-        MAINFRAME.toggle_log()
         MAINFRAME.mainloop()
     else:
         # Command line args time!
