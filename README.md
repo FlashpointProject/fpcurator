@@ -18,6 +18,7 @@ The Auto Curator supports auto curating games from these websites:
 - Addicting Games (Flash and HTML5)
 - Coolmath Games (HTML5)
 - FreeArcade (Flash or Java)
+- Jay is games (Flash, Shockwave, Unity, or HTML5)
 - Kongregate (Flash and HTML5)
 - Miniclip (HTML5)
 - Newgrounds (Flash, Unity, or HTML5)
