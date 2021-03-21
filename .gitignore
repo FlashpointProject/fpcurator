@@ -6,6 +6,7 @@ __pycache__
 .vscode
 
 # Don't include build and dist data and files
+upx
 fpcurator.spec
 build
 .venv.bat

@@ -30,28 +30,13 @@ except: pass
 from importlib import reload as __reload__
 from tooltip import Tooltip
 
-MONTHS = {
-    "Jan": "01",
-    "Feb": "02",
-    "Mar": "03",
-    "Apr": "04",
-    "May": "05",
-    "Jun": "06",
-    "Jul": "07", 
-    "Aug": "08",
-    "Sep": "09",
-    "Oct": "10",
-    "Nov": "11",
-    "Dec": "12"
-}
-
 HELP_HTML = """<!doctype html>
 <html><body>
     <h1><center>Help</center></h1>
     <p>fpcurator is a collection of tools for performing certain curation tasks easier. There are four sub-tools available. Note that the tool may freeze while performing any task. All debug info on any task is printed to the console that can be shown by clicking "Toggle Log".</p>
     
     <h2>Auto Curator</h2>
-    <p>The Auto Curator tool generates a bunch of partial curations based upon a list of urls containing the games to curate. The list of curatable websites is limited the site definitions in the "sites" folder next to the program.<br>
+    <p>The Auto Curator tool generates a bunch of partial curations based upon a list of urls containing the games to curate. The list of curatable websites is limited the site definitions in the "sites" folder next to the program. To reload all site definitions, press "Reload". To redownload your site definitions, press "Redownload".<br>
     &nbsp;<br>Here are a list of options:
     <ul>
         <li><b>Save</b> - When checked, the auto curator will save it's progress so if it fails from an error, the tool will resume where it left off given the same urls.</li>
@@ -155,8 +140,8 @@ TEXTS = {
     'p1.verylowmetric': 'Has a very low similarity metric (<75%)'
 }
 
-TITLE = "fpcurator v1.3.1"
-ABOUT = "Created by Zach K - v1.3.1"
+TITLE = "fpcurator v1.4.0"
+ABOUT = "Created by Zach K - v1.4.0"
 
 SITES_FOLDER = "sites"
 
@@ -499,6 +484,8 @@ class AutoCurator(tk.Frame):
         
         self.reload_btn = ttk.Button(dframe, text="Reload", command=self.reload)
         self.reload_btn.pack(side="left", padx=5)
+        self.update_btn = ttk.Button(dframe, text="Redownload", command=self.update_online)
+        self.update_btn.pack(side="left")
         
         # Create panel for inputting urls
         lbl = tk.Label(self, bg="white", text="  Put URLs to curate in this box:")
@@ -514,6 +501,7 @@ class AutoCurator(tk.Frame):
             self.output.insert(0, folder)
     
     def download_defs(data, silent=False):
+        print("[INFO] Downloading site definitions from online")
         global DEFS_GOTTEN
         DEFS_GOTTEN = True
 
@@ -529,10 +517,10 @@ class AutoCurator(tk.Frame):
         for i in range(len(urls)):
             fpclib.write(SITES_FOLDER+"/"+files[i], fpclib.read_url(urls[i]))
         
-        # Reload the program (because python doesn't like to load newly created python files as modules)
+        # Tell the user to restart the program (because python doesn't like to load newly created python files as modules)
         if not silent:
-            print(sys.argv)
-            exit(0)
+            tkm.showinfo(message="Definitions downloaded. Restart the program to load them. The program will now exit.")
+            sys.exit(0)
 
     def get_defs(silent=False):
         # Query to download site definitions from online.
@@ -586,6 +574,11 @@ class AutoCurator(tk.Frame):
         # Initialize defs and priorities
         self.defs = AutoCurator.get_defs()
         self.defcount.set(f"{len(self.defs)} site defintitions found")
+    
+    def update_online(self):
+        # Get defs and download
+        data = fpclib.read_url("https://github.com/FlashpointProject/fpcurator/raw/main/sites/defs.txt")
+        AutoCurator.download_defs(data, False)
     
     def s_curate(output, defs, urls, titles, save, ignore_errs):
         cwd = os.getcwd()
@@ -1379,7 +1372,7 @@ if __name__ == "__main__":
             tkm.showerror(message=f"Fatal {e.__class__.__name__}: {str(e)}")
     else:
         # Command line args time!
-        parser = argparse.ArgumentParser(description="fpcurator is a bulk tool that makes certain curation tasks easier. There are four modes, -mC (default, autocurator mode), -mD (download urls mode), -mS (bulk search mode), and -mW (get wiki data mode). loc is a file containing urls to do something with, or if -l is set, a url. You can specify as many as you want.")
+        parser = argparse.ArgumentParser(description="fpcurator is a bulk tool that makes certain curation tasks easier. There are five modes, -mC (default, autocurator mode), -mG (update site definitions mode), -mD (download urls mode), -mS (bulk search mode), and -mW (get wiki data mode). loc is a file containing urls to do something with, or if -l is set, a url. You can specify as many as you want.")
         
         parser.add_argument("-m", dest='mode', metavar='mode', help="Set the mode specifying what to do with the given urls.", default="C")
         
@@ -1403,17 +1396,19 @@ if __name__ == "__main__":
         parser.add_argument("-u", action='store_true', help="In S mode, disables the exact url check.")
         parser.add_argument("-d", action='store_true', help="In S mode, causes the searcher to use the slow default python library difflib.")
         
-        parser.add_argument("loc", nargs="+", help='In C, D, and S mode, this is a file containing urls to curate, or if -l is set, a url. You can specify as many as you want. In W mode, it is only a single item specifying the page containing wiki data to grab that will be printed to the console. In S mode (when -l is not set), you must have a line only containing a single "@" character in each file that specifies where the urls of the entries to search for begin. Everything before that character is interpreted as titles, and everything after is interpreted as urls for those titles. In S mode (when -l is set), every other item in the list should be a url and the others should be game titles.')
+        parser.add_argument("loc", nargs="+", help='In C, D, and S mode, this is a file containing urls to curate, or if -l is set, a url. You can specify as many as you want. In W mode, it is only a single item specifying the page containing wiki data to grab that will be printed to the console. In S mode (when -l is not set), you must have a line only containing a single "@" character in each file that specifies where the urls of the entries to search for begin. Everything before that character is interpreted as titles, and everything after is interpreted as urls for those titles. In S mode (when -l is set), every other item in the list should be a url and the others should be game titles. In G mode, this just needs to be any text.')
         
         args = parser.parse_args()
         
         # Check for invalid modes
-        if args.mode not in ["C", "D", "S", "W"]:
+        if args.mode not in ["C", "G", "D", "S", "W"]:
             print("Invalid mode '" + args.mode + "'")
-            exit(1)
+            sys.exit(1)
         
-        
-        if args.mode == "W": # Wiki mode is the easiest, just get data
+        if args.mode == "G": # G mode is the easiest
+            data = fpclib.read_url("https://github.com/FlashpointProject/fpcurator/raw/main/sites/defs.txt")
+            AutoCurator.download_defs(data, True)
+        elif args.mode == "W": # Wiki mode is easy, just get data
             fpclib.DEBUG_LEVEL, dl = 0, fpclib.DEBUG_LEVEL
             try:
                 print("\n".join(fpclib.get_fpdata(args.loc[0])))
@@ -1476,7 +1471,7 @@ if __name__ == "__main__":
                     if args.l:
                         if len(urls) % 2 == 1:
                             print("[ERR]  Missing url for last title")
-                            exit(2)
+                            sys.exit(2)
                         titles = urls[::2] # slice notation makes this easy peasy
                         urls = urls[1::2]
                     

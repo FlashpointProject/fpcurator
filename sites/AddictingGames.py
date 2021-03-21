@@ -1,9 +1,7 @@
-# Kongregate definition.
-# 
+# Addicting Games definition.
+
 from __main__ import fpclib
 from __main__ import re
-
-from __main__ import MONTHS
 
 regex = 'addictinggames.com'
 
@@ -47,7 +45,7 @@ class AddictingGames(fpclib.Curation):
 
         # Get Release Date
         date = soup.select_one(".release-span > strong").text
-        self.date = date[-4:] + "-" + MONTHS[date[3:6]] + "-" + date[:2]
+        self.date = date[-4:] + "-" + fpclib.MONTHS[date[3:6]] + "-" + date[:2]
 
         # Get Tags
         try: self.tags = TAGS[soup.select(".breadcrumb > a")[1].text]

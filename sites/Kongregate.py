@@ -1,8 +1,7 @@
 # Kongregate definition.
+
 from __main__ import fpclib
 from __main__ import bs4, re, urllib, uuid
-
-from __main__ import MONTHS
 
 regex = 'kongregate.com'
 
@@ -42,7 +41,7 @@ class Kongregate(fpclib.Curation):
         
         # Get Release Date
         date = soup.select_one(".game_pub_plays > p > .highcontrast").text
-        self.date = date[-4:] + "-" + MONTHS[date[:3]] + "-" + date[5:7]
+        self.date = date[-4:] + "-" + fpclib.MONTHS[date[:3]] + "-" + date[5:7]
 
         # Get description (combination of instructions and description)
         # idata is inside a script tag and hasn't been inserted yet.
