@@ -1,3 +1,23 @@
+# Best way of hiding the console window
+# This should be imported first to get the right console window and hide it early
+try:
+    from ctypes import windll
+    CONSOLE = windll.kernel32.GetConsoleWindow()
+except:
+    CONSOLE = None
+CONSOLE_OPEN = True
+
+def toggle_console():
+    if CONSOLE:
+        global CONSOLE_OPEN
+        if CONSOLE_OPEN:
+            windll.user32.ShowWindow(CONSOLE, 0)
+            CONSOLE_OPEN = False
+        else:
+            windll.user32.ShowWindow(CONSOLE, 1)
+            CONSOLE_OPEN = True
+toggle_console()
+
 import tkinter as tk
 import tkinter.ttk as ttk
 import tkinter.filedialog as tkfd
@@ -22,9 +42,6 @@ import zipfile
 
 import difflib
 try: import Levenshtein
-except: pass
-
-try: import win32gui, win32con # Best way to hide the console, but it isn't cross-platform, so it has a try-catch.
 except: pass
 
 from importlib import reload as __reload__
@@ -151,8 +168,6 @@ AM_PATTERN = re.compile('[\W_]+')
 AMS_PATTERN = re.compile('([^\w;]|_)+')
 
 MAINFRAME = None
-try: CONSOLE = win32gui.GetForegroundWindow()
-except: pass
 
 DEFS_GOTTEN = False
 
@@ -208,7 +223,7 @@ class Mainframe(tk.Tk):
         label.pack(side="left")
         help_button = ttk.Button(bframe, text="Help", command=self.show_help)
         help_button.pack(side="left", padx=5)
-        log_button = ttk.Button(bframe, text="Toggle Log", command=self.toggle_log)
+        log_button = ttk.Button(bframe, text="Toggle Log", command=toggle_console)
         log_button.pack(side="left")
         
         # Add debug level entry
@@ -222,8 +237,6 @@ class Mainframe(tk.Tk):
         
         # Exists to prevent more than one of a window from opening at a time
         self.help = None
-        self.log = True
-        self.toggle_log()
         
         # Load GUI state from last close
         self.load()
@@ -278,15 +291,6 @@ class Mainframe(tk.Tk):
         if not self.help:
             self.help = Help(self)
     
-    def toggle_log(self):
-        if CONSOLE:
-            if self.log:
-                win32gui.ShowWindow(CONSOLE, win32con.SW_HIDE)
-                self.log = False
-            else:
-                win32gui.ShowWindow(CONSOLE, win32con.SW_SHOW)
-                self.log = True
-    
     def set_debug_level(self, name, index, mode):
         dl = self.debug_level.get()
         try:
@@ -296,7 +300,7 @@ class Mainframe(tk.Tk):
     
     def exit_window(self):
         if not frozen_ui:
-            if not self.log: self.toggle_log()
+            if not CONSOLE_OPEN: toggle_console()
             # TODO: Python can't stop a thread easily, so make sure nothing is running before closing.
             self.save()
             self.destroy()
