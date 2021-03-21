@@ -19,10 +19,14 @@ class JayIsGames(fpclib.Curation):
         
         try:
             self.desc = soup.select_one(".entrybody > p").text
+        except:
+            try:
+                self.desc = soup.find("meta", attrs={"name": "description"})["content"]
+            except: pass
+        
+        if self.dev:
             dev = DEV.search(self.desc)
             if dev: self.dev = dev[2]
-        except: pass
-
         url = fpclib.normalize(self.src)
 
         # Get launch command
