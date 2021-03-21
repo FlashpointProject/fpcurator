@@ -4,17 +4,24 @@ from __main__ import re
 
 regex = 'jayisgames.com'
 
+TITLE = re.compile("Play (.*?), a Free online game")
 DEV = re.compile("(developed|created) by (\w+)", re.I)
 
 class JayIsGames(fpclib.Curation):
     def parse(self, soup):
-        self.title = soup.select_one("h1.asset-name").text
+        try:
+            self.title = soup.select_one("h1.asset-name").text
+        except:
+            # Game has no title, find it in title
+            self.title = TITLE.search(soup.select_one("title").text.strip())[1]
         #self.logo = soup.find("meta", property="og:image")["content"] - Just grabs the Jay is games logo, not the game logo
-        self.pub = "Jay is games"
+        self.pub = "Jay Is Games"
         
-        self.desc = soup.select_one(".entrybody > p").text
-        dev = DEV.search(self.desc)
-        if dev: self.dev = dev[2]
+        try:
+            self.desc = soup.select_one(".entrybody > p").text
+            dev = DEV.search(self.desc)
+            if dev: self.dev = dev[2]
+        except: pass
 
         url = fpclib.normalize(self.src)
 
