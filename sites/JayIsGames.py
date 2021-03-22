@@ -2,13 +2,30 @@
 from __main__ import fpclib
 from __main__ import re
 
+MONTHS = {
+    "January": "01",
+    "February": "02",
+    "March": "03",
+    "April": "04",
+    "May": "05",
+    "June": "06",
+    "July": "07",
+    "August": "08",
+    "September": "09",
+    "October": "10",
+    "November": "11",
+    "December": "12"
+}
+
 regex = 'jayisgames.com'
 
 TITLE = re.compile("Play (.*?), a Free online game")
 DEV = re.compile("(developed|created) by (\w+)", re.I)
+DATE = re.compile("(.*?) (\d+), (\d+)")
 
 class JayIsGames(fpclib.Curation):
     def parse(self, soup):
+        # Get title, logo?, and publisher
         try:
             self.title = soup.select_one("h1.asset-name").text
         except:
@@ -17,18 +34,28 @@ class JayIsGames(fpclib.Curation):
         #self.logo = soup.find("meta", property="og:image")["content"] - Just grabs the Jay is games logo, not the game logo
         self.pub = "Jay Is Games"
         
-        try:
-            self.desc = soup.select_one(".entrybody > p").text
-        except:
-            try:
-                self.desc = soup.find("meta", attrs={"name": "description"})["content"]
-            except: pass
+        # Get Description
+        desc = soup.select_one(".entrybody > p")
+        if desc:
+            self.desc = desc.text
+        else:
+            desc = soup.find("meta", attrs={"name": "description"})
+            if desc: self.desc = desc["content"]
         
-        if self.dev:
+        # Check for "Read More"
+        more = soup.select_one(".read-more")
+        if more:
+            msoup = fpclib.get_soup(more["href"])
+            text = msoup.select_one(".entrydate").text.split("|")
+
+            self.dev = text[0].strip()[3:]
+            match = DATE.fullmatch(text[1].strip())
+            self.date = match[3] + "-" + MONTHS[match[1]] + "-" + match[2].zfill(2)
+        elif self.desc:
             dev = DEV.search(self.desc)
             if dev: self.dev = dev[2]
-        url = fpclib.normalize(self.src)
 
+        url = fpclib.normalize(self.src)
         # Get launch command
         embed = soup.find("embed")
         if embed:

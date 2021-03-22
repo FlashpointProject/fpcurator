@@ -54,6 +54,7 @@ HELP_HTML = """<!doctype html>
     
     <h2>Auto Curator</h2>
     <p>The Auto Curator tool generates a bunch of partial curations based upon a list of urls containing the games to curate. The list of curatable websites is limited the site definitions in the "sites" folder next to the program. To reload all site definitions, press "Reload". To redownload your site definitions, press "Redownload".<br>
+    <b>NOTE: Auto curated games should ALWAYS be tested in Flashpoint Core before being submitted.</b>
     &nbsp;<br>Here are a list of options:
     <ul>
         <li><b>Save</b> - When checked, the auto curator will save it's progress so if it fails from an error, the tool will resume where it left off given the same urls.</li>
@@ -176,8 +177,7 @@ def set_entry(entry, data):
     entry.insert(0, data)
 
 def printfl(data):
-    print(data, end="")
-    sys.stdout.flush()
+    print(data, end="", flush=True)
 
 frozen_ui = False
 def freeze(subtitle):
@@ -191,6 +191,22 @@ def unfreeze():
 
 def edit_file(file):
     webbrowser.open(file)
+
+def print_err(pre="", start=1, e=None):
+    if e:
+        tb_lines = traceback.format_exception(e.__class__, e, e.__traceback__)
+    else:
+        tb_lines = traceback.format_exception(*sys.exc_info())
+    
+    lines = []
+    for tb_line in tb_lines[start:]:
+        for line in tb_line.split("\n"):
+            if line:
+                if line[0] == " ": lines.append(line[2:])
+                else: lines.append(line)
+
+    for line in lines:
+        print(pre + line)
 
 class Mainframe(tk.Tk):
     def __init__(self):
@@ -556,12 +572,10 @@ class AutoCurator(tk.Frame):
                 priorities[name] = m.priority if hasattr(m, "priority") else 0
                 
                 defs.append((m.regex, getattr(m, name)))
-                fpclib.debug('Found class "{}"', 1, name)
-            except Exception as e:
-                fpclib.debug('Skipping class "{}", error:', 1, name)
-                print()
-                traceback.print_exc()
-                print()
+                fpclib.debug('Found definition "{}"', 1, name)
+            except:
+                fpclib.debug('Skipping definition "{}", error:', 1, name)
+                print_err("  " * fpclib.TABULATION + "         ", 2)
         sys.path.pop(0)
         
         fpclib.TABULATION -= 1
@@ -589,6 +603,13 @@ class AutoCurator(tk.Frame):
         fpclib.make_dir(output, True)
         errs = fpclib.curate_regex(urls, defs, use_title=titles, save=save, ignore_errs=ignore_errs)
         os.chdir(cwd)
+        
+        # Print errors
+        if errs:
+            print("[ERR]  These urls failed to be curated:")
+            for url, e, _ in errs:
+                print(f"         {url}:")
+                print_err("           ", 3, e)
         
         return errs
     
@@ -703,7 +724,7 @@ class Downloader(tk.Frame):
                 tkm.showinfo(message="You must specify at least one url to download.")
         except Exception as e:
             print("[ERR]  Failed to download urls, err ")
-            traceback.print_exc()
+            print_err("         ")
             tkm.showerror(message=f"Failed to download urls.\n{e.__class__.__name__}: {str(e)}")
         
         unfreeze()
@@ -820,7 +841,7 @@ class Searcher(tk.Frame):
             return True
         except Exception as e:
             print("[ERR]  Failed to load database, err ")
-            traceback.print_exc()
+            print_err("         ")
             if not silent: tkm.showerror(message=f"Failed to load database. Ensure the the database provided is valid.\n{e.__class__.__name__}: {str(e)}")
         finally:
             if not silent: unfreeze()
@@ -852,7 +873,7 @@ class Searcher(tk.Frame):
             threading.Thread(target=lambda: Searcher.s_search(titles, urls, self.database.get(), self.sources.get(), self.devpubs.get(), PRIORITIES, LOG, STRIP_SUBTITLES, EXACT_URL_CHECK, DIFFLIB), daemon=True).start()
         except Exception as e:
             print("Failed to start search, err ")
-            traceback.print_exc()
+            print_err("  ")
             tkm.showerror(message=f"Failed to get input data.\n{e.__class__.__name__}: {str(e)}")
     
     def s_search(titles, urls, dbloc, src_regex_str, dp_regex_str, PRIORITIES, LOG, STRIP_SUBTITLES, EXACT_URL_CHECK, DIFFLIB, silent_=False):
@@ -920,7 +941,7 @@ class Searcher(tk.Frame):
                         if Searcher.s_load(dbloc, silent_): raw_data = fpclib.read("search/database.tsv")
                     except Exception as e:
                         print("Failed (bad read), err")
-                        traceback.print_exc()
+                        print_err("  ")
                         if not silent_: tkm.showerror(message=f"Failed to read database.\n{e.__class__.__name__}: {str(e)}")
                         return
                 else:
@@ -1303,7 +1324,7 @@ class Searcher(tk.Frame):
             print()
         except Exception as e:
             print("[ERR]  Search failed, err ")
-            traceback.print_exc()
+            print_err("         ")
             tkm.showerror(message=f"Search failed.\n{e.__class__.__name__}: {str(e)}")
         
         if not silent_: unfreeze()
@@ -1338,7 +1359,7 @@ class Lister(tk.Frame):
                 txt.insert("end", "\n".join(data))
             else:
                 tkm.showerror(message="Failed to get data from wiki.")
-        except Exception as e:
+        except:
             tkm.showerror(message="Failed to get data from wiki.")
         unfreeze()
     
