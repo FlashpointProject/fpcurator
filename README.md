@@ -25,6 +25,7 @@ The Auto Curator supports auto curating games from these websites:
 - [Miniclip](https://www.miniclip.com/) (HTML5)
 - [Newgrounds](https://www.newgrounds.com/) (Flash, Unity, or HTML5)
 - [Y8](https://www.y8.com/) (Flash, Shockwave, Unity, or HTML5)
+- Unknown websites (Flash, Shockwave, Unity, or Java). HTML5 is **NOT** supported. It may not work on every website.
 
 To add support for other pages not supported by the tool, first start by creating a file named `<WebsiteName>.py` inside the `sites` folder next to the script/executable and putting this code inside it:
 
