@@ -17,13 +17,14 @@ If you are looking for command line usage, run `fpcurator --help` or `fpcurator.
 
 The Auto Curator supports auto curating games from these websites:
 
-- Addicting Games (Flash and HTML5)
-- Coolmath Games (HTML5)
-- FreeArcade (Flash or Java)
-- Jay is games (Flash, Shockwave, Unity, or HTML5)
-- Kongregate (Flash and HTML5)
-- Miniclip (HTML5)
-- Newgrounds (Flash, Unity, or HTML5)
+- [Addicting Games](https://www.addictinggames.com/) (Flash and HTML5)
+- [Coolmath](https://www.coolmathgames.com/) Games (HTML5)
+- [FreeArcade](http://www.freearcade.com/) (Flash or Java)
+- [Jay is games](https://jayisgames.com/) (Flash, Shockwave, Unity, or HTML5)
+- [Kongregate](https://www.kongregate.com/) (Flash and HTML5)
+- [Miniclip](https://www.miniclip.com/) (HTML5)
+- [Newgrounds](https://www.newgrounds.com/) (Flash, Unity, or HTML5)
+- [Y8](https://www.y8.com/) (Flash, Shockwave, Unity, or HTML5)
 
 To add support for other pages not supported by the tool, first start by creating a file named `<WebsiteName>.py` inside the `sites` folder next to the script/executable and putting this code inside it:
 
