@@ -1,10 +1,10 @@
 # This is the catch-all unknown site definition. It might not work right in all cases!
 
 from __main__ import fpclib
-
 from __main__ import urllib
 
-regex = ".*"
+regex = "."
+priority = -10000
 
 class Unknown(fpclib.Curation):
     def parse(self, soup):
