@@ -3,6 +3,8 @@ fpcurator is a Python and fpclib powered tool for downloading urls, auto-generat
 
 If you don't want to install python to use fpcurator, check the releases page for a release. Extract the fpcurator.zip file and run the `fpcurator.bat` file.
 
+**NOTE: Auto curated games should ALWAYS be tested in Flashpoint Core before being submitted.**
+
 ## Basic Usage
 
 Launch the script or executable and choose a tab. You can also drag and drop a list of urls on to the program (if you are using the executable or have python configured correctly) to quickly automatically curate them. For more detailed help on how to use the program, see the built-in "Help" button.

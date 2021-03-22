@@ -1300,6 +1300,7 @@ class Searcher(tk.Frame):
                     
                 print('Done')
                 if not silent_: edit_file("search\\log.txt")
+            print()
         except Exception as e:
             print("[ERR]  Search failed, err ")
             traceback.print_exc()
