@@ -1,6 +1,6 @@
 # Free Arcade definition. Only supports Flash and Java.
-from __main__ import fpclib
-from __main__ import re
+import fpclib
+import re
 
 regex = 'freearcade.com'
 

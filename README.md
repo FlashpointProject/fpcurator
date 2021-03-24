@@ -20,23 +20,24 @@ The Auto Curator supports auto curating games from these websites:
 - [Addicting Games](https://www.addictinggames.com/) (Flash and HTML5)
 - [Coolmath](https://www.coolmathgames.com/) Games (HTML5)
 - [FreeArcade](http://www.freearcade.com/) (Flash or Java)
+- [itch.io](https://itch.io/) (Flash, Java, Unity, or HTML5)
 - [Jay is games](https://jayisgames.com/) (Flash, Shockwave, Unity, or HTML5)
 - [Kongregate](https://www.kongregate.com/) (Flash and HTML5)
 - [Miniclip](https://www.miniclip.com/) (HTML5)
 - [Newgrounds](https://www.newgrounds.com/) (Flash, Unity, or HTML5)
 - [Y8](https://www.y8.com/) (Flash, Shockwave, Unity, or HTML5)
-- Unknown websites (Flash, Shockwave, Unity, or Java). HTML5 is **NOT** supported. It may not work on every website.
+- Unknown websites (Flash, Shockwave, Unity, or Java). HTML5 is **NOT** supported. This may not work on every website.
 
 To add support for other pages not supported by the tool, first start by creating a file named `<WebsiteName>.py` inside the `sites` folder next to the script/executable and putting this code inside it:
 
 ```python
-from __main__ import fpclib
-# You can put other imports here, but the standalone only supports importing the following other libraries from __main__ (Other imports require python to be installed on the host machine):
+import fpclib
+# You can put other imports here, but the standalone only supports importing the following other libraries (Other imports require python to be installed on the host machine and the script to be run directly):
 
 # os, sys, time, re, json,
 # bs4, argparse, codecs, datetime, glob,
 # sqlite3, threading, traceback, webbrowser, zipfile,
-# urllib, difflib, and Levenshtein.
+# urllib, difflib, googletrans, and Levenshtein.
 
 
 # This is the regex that will be used to match the site url. It is required!

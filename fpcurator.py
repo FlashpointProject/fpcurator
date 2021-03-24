@@ -31,7 +31,9 @@ import re, json, bs4
 import argparse
 import codecs
 import datetime
+import googletrans
 import glob
+import importlib
 import sqlite3
 import threading
 import traceback
@@ -44,7 +46,6 @@ import difflib
 try: import Levenshtein
 except: pass
 
-from importlib import reload as __reload__
 from tooltip import Tooltip
 
 HELP_HTML = """<!doctype html>
@@ -158,8 +159,9 @@ TEXTS = {
     'p1.verylowmetric': 'Has a very low similarity metric (<75%)'
 }
 
-TITLE = "fpcurator v1.4.1"
-ABOUT = "Created by Zach K - v1.4.1"
+TITLE = "fpcurator v1.5.0"
+ABOUT = "Created by Zach K - v1.5.0"
+VER = 1.5
 
 SITES_FOLDER = "sites"
 
@@ -256,6 +258,7 @@ class Mainframe(tk.Tk):
         
         # Load GUI state from last close
         self.load()
+        self.save()
         
         # Get autocurator site definitions
         self.autocurator.reload()
@@ -272,6 +275,7 @@ class Mainframe(tk.Tk):
             self.downloader.stxt.txt.focus_set()
         elif tab == ".!searcher":
             self.searcher.stxta.txt.focus_set()
+        self.save()
     
     def check_freeze(self):
         if self.frozen and not frozen_ui: self.unfreeze()
@@ -566,13 +570,15 @@ class AutoCurator(tk.Frame):
         for py_file in glob.glob(os.path.join(SITES_FOLDER, '*.py')):
             try:
                 name = py_file[py_file.replace('\\', '/').rfind('/')+1:-3]
-                m = __import__(name)
-                __reload__(m)
+                m = importlib.import_module(name)
+                importlib.reload(m)
                 
                 priorities[name] = m.priority if hasattr(m, "priority") else 0
-                
-                defs.append((m.regex, getattr(m, name)))
-                fpclib.debug('Found definition "{}"', 1, name)
+                if getattr(m, "ver", VER) <= VER:
+                    defs.append((m.regex, getattr(m, name)))
+                    fpclib.debug('Found definition "{}"', 1, name)
+                else:
+                    fpclib.debug('Definition "{}" is not supported. Update fpcurator!', 1, name)
             except:
                 fpclib.debug('Skipping definition "{}", error:', 1, name)
                 print_err("  " * fpclib.TABULATION + "         ", 2)

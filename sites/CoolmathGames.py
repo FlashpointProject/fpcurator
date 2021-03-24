@@ -1,8 +1,8 @@
 # Coolmath Games definition. Only supports HTML5 because all flash games are already curated except those on wayback.
 # Some games can only be curated through https links.
 
-from __main__ import fpclib
-from __main__ import json, bs4, re, zipfile
+import fpclib
+import json, bs4, re, zipfile
 
 regex = 'coolmath-?games.com'
 

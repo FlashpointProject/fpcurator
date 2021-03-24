@@ -1,7 +1,7 @@
 # Kongregate definition.
 
-from __main__ import fpclib
-from __main__ import bs4, re, urllib, uuid
+import fpclib
+import bs4, re, urllib, uuid
 
 regex = 'kongregate.com'
 

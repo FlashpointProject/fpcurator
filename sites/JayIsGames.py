@@ -1,6 +1,6 @@
 # Jay is games definition.
-from __main__ import fpclib
-from __main__ import re
+import fpclib
+import re
 
 MONTHS = {
     "January": "01",

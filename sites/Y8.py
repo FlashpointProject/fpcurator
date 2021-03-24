@@ -1,6 +1,7 @@
 # Y8 definition.
-from __main__ import fpclib
-from __main__ import re
+
+import fpclib
+import re
 
 regex = 'y8.com'
 

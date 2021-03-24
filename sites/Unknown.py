@@ -1,7 +1,7 @@
 # This is the catch-all unknown site definition. It might not work right in all cases!
 
-from __main__ import fpclib
-from __main__ import urllib
+import fpclib
+import urllib
 
 regex = "."
 priority = -10000
