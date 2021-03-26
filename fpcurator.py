@@ -16,7 +16,7 @@ def toggle_console():
         else:
             windll.user32.ShowWindow(CONSOLE, 1)
             CONSOLE_OPEN = True
-#toggle_console()
+toggle_console()
 
 import tkinter as tk
 import tkinter.ttk as ttk
@@ -532,11 +532,14 @@ class Mainframe(tk.Tk):
             
         except (FileNotFoundError, KeyError):
             # On first launch, check if in Flashpoint "Utilities" folder and set default data if so
-            dirs = __file__.replace("\\", "/").split("/")
-            if dirs[-2].lower() == "utilities" and "flashpoint" in dirs[-3].lower():
-                #self.database.set("../Data/flashpoint.sqlite")
-                set_entry(self.autocurator.output, "../Curations/Working")
-                set_entry(self.deduper.curations, "../Curations/Working")
+            dirs = [d for d in os.getcwd().replace("\\", "/").split("/") if d]
+            try:
+                if dirs[-2].lower() == "utilities" and "flashpoint" in dirs[-3].lower():
+                    #self.database.set("../Data/flashpoint.sqlite")
+                    set_entry(self.autocurator.output, "../../Curations/Working")
+                    set_entry(self.deduper.curations, "../../Curations/Working")
+            except:
+                pass
 
 class Help(tk.Toplevel):
     def __init__(self, parent):
