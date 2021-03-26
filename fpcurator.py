@@ -16,7 +16,7 @@ def toggle_console():
         else:
             windll.user32.ShowWindow(CONSOLE, 1)
             CONSOLE_OPEN = True
-toggle_console()
+#toggle_console()
 
 import tkinter as tk
 import tkinter.ttk as ttk
@@ -31,6 +31,8 @@ import re, json, bs4
 import argparse
 import codecs
 import datetime
+import functools
+import pyperclip
 import googletrans
 import glob
 import importlib
@@ -45,8 +47,6 @@ import zipfile
 import difflib
 try: import Levenshtein
 except: pass
-
-from tooltip import Tooltip
 
 HELP_HTML = """<!doctype html>
 <html><body>
@@ -63,7 +63,7 @@ HELP_HTML = """<!doctype html>
         <li><b>Clear Done URLs</b> - When checked, the auto curator will clear any urls in the list when they are curated. Errored urls will remain in the list.</li>
         <li><b>Notify When Done</b> - When checked, the auto curator will show a message box when it is done curating.</li>
     </ul>
-    Here is some basic usage steps:
+    Here are some basic usage steps:
     <ol>
         <li>Select the options you want, specified by the list above, and set the output directory of these partial curations.</li>
         <li>Paste the urls you want to curate into the text box, one per line.</li>
@@ -80,11 +80,40 @@ HELP_HTML = """<!doctype html>
         <li><b>Clear Done URLs</b> - When checked, the downloader will clear any urls in the list when they are downloaded. Errored urls will remain in the list.</li>
         <li><b>Notify When Done</b> - When checked, the downloader will show a message box when it is done downloading.</li>
     </ul>
-    Here is some basic usage steps:
+    Here are some basic usage steps:
     <ol>
         <li>Select the options you want, specified by the list above, and set the output directory of the downloaded folders and files.</li>
         <li>Paste the urls you want to download into the text box, one per line.</li>
         <li>Press the "Download" button to start the download process.</li>
+    </ol>
+    </p>
+    
+    <h2>Game Finder</h2>
+    <p>The Game Finder is an extension of the default searching feature present in Flashpoint already. Type a search query into the "Query" box and press "Search" or Enter to search for those entries within the Flashpoint database of your choice. Make sure you pick the Infinity or Ultimate database ("FlashpointFolder/Data/flashpoint.sqlite") rather than the Core one.<br>
+    &nbsp;<br>
+    There are buttons available to export values you have selected in the list (use Ctrl+Click or Shift+Click to select multiple) into a playlist or to just copy their titles/uuids.
+    &nbsp;<br>
+    Overall, the search feature works in exactly the way the default Flashpoint Search Bar does, with a few changes:
+    <ul>
+        <li>String search parts now require internal quotes to be escaped: <code>""game""</code> is wrong, but <code>"\\"game\\""</code> is right.</li>
+        <li>Instead of using the ":" comparison operator, you may also use the "=" or "~" operators in it's place. The "=" sign checks for an exact match to the provided text (which may be in quotes) while the "~" checks for an like match to an SQL LIKE string. These operators may also be used on keywords alone: <code>="Game"</code> and <code>=Game</code> do the same thing (check that the name of a game is exactly "Game"), but the first can accept spaces inside it.</li>
+        <li>Queries can be separated by an <code>OR</code> keyword that does exactly what you think it does. e.g., find all action or adventure games: <code>#Action OR #Adventure</code>. If you want to search for the text "or" exactly, just use lowercase letters as the search is case-insensitive.</li>
+        <li><code>AND</code> is now a keyword that basically does nothing, since two search terms right next to each other are assumed to be "AND" joined unless there's an "OR" between them. Note that you cannot group AND and OR conditions with parentheses. If you want to search for the text "and" exactly, just use lowercase letters as the search is case-insensitive.</li>
+        <li>The @ prefix now matches any of developer, publisher, or source instead of just developer. This means you'll get more results that you're looking for.</li>
+        <li>If you don't provide a field to match, the program will automatically assume you are searching for a title keyword. This will also search through alternate titles. You can also use <code>title:"thing here"</code> instead of <code>thing here</code> to exclude alternate title searching.</li>
+        <li>The prefixes "alt", "tags", "genre", "genres", "ser", "dev", "pub", "src", "url", "tech", "mode", "ver", "v", "date", "lang", "desc", "app", and "cmd" are available to be used in place of their longer counterparts like launchCommand and applicationPath to make searching easier.</li>
+    </ul>
+    </p>
+
+    <h2>Curation DeDuper</h2>
+    <p>When pointed to a folder containing a bunch of curations, the curation deduper will show you (generally) how likely it is that each of them individually is in Flashpoint. Make sure the database is set to the Infinity/Ultimate database and not the Core one. The deduper first checks to see if the launch command is already in Flashpoint, then it checks the source url, and finally it checks the title. Only launch command and source url matches are confirmed duplicates. If any of your curations are from the same exact source as a game in Flashpoint, they will be marked as duplicates; turn off this feature with the checkbox if you are curating games from a disk or someplace that has multiple games per the same source (should not happen with normal games, which ought to use the webpage url)
+    &nbsp;<br>Here are some basic usage steps:
+    <ol>
+        <li>Set the database to your Infinity/Ultimate database.</li>
+        <li>Set the curations folder to your Curations/Working folder, wherever that may be (hopefully it's in Core).</li>
+        <li>Select whether or not to check sources.</li>
+        <li>Press the check button to check for duplicates.</li>
+        <li>Select the items you want to delete and delete them, or copy their titles so you can search in Flashpoint or fpcurator for duplicates.</li>
     </ol>
     </p>
     
@@ -98,7 +127,7 @@ HELP_HTML = """<!doctype html>
         <li><b>Exact Url Matches</b> - When unchecked, the searcher will skip checking for exact url matches for a game match in Flashpoint. Normally an exact url match is a very good indicator if a game is curated, but this is optional in case multiple games are on the same url.</li>
         <li><b>Use difflib</b> - When checked, the searcher will use the default python difflib instead of the fast and efficient python-Levenshtein.</li>
     </ul>
-    Here is some basic usage steps:
+    Here are some basic usage steps:
     <ol>
         <li>Select the Flashpoint database, located in your Flashpoint folder under "/Data/flashpoint.sqlite".</li>
         <li>Select the options you want, specified by the list above.</li>
@@ -159,16 +188,44 @@ TEXTS = {
     'p1.verylowmetric': 'Has a very low similarity metric (<75%)'
 }
 
+FIELDS = {
+    "alt": "alternateTitles",
+    "#": "tags",
+    "tag": "tags",
+    "genre": "tags",
+    "genres": "tags",
+    "ser": "series",
+    "dev": "developer",
+    "pub": "publisher",
+    "src": "source",
+    "url": "source",
+    "!": "platform",
+    "tech": "platform",
+    "mode": "playMode",
+    "ver": "version",
+    "v": "version",
+    "date": "releaseDate",
+    "lang": "language",
+    "desc": "description",
+    "app": "applicationPath",
+    "cmd": "launchCommand"
+}
+# This uuid uniquely defines fpcurator. (there is a 0 on the end after the text)
+UUID = '51be8a01-3307-4103-8913-c2f70e64d83'
+
 TITLE = "fpcurator v1.5.0"
 ABOUT = "Created by Zach K - v1.5.0"
-VER = 1.5
+VER = 5
 
 SITES_FOLDER = "sites"
 
 fpclib.DEBUG_LEVEL = 4
 
-AM_PATTERN = re.compile('[\W_]+')
-AMS_PATTERN = re.compile('([^\w;]|_)+')
+AM_PATTERN = re.compile(r'[\W_]+')
+AMS_PATTERN = re.compile(r'([^\w;]|_)+')
+INV = re.compile(r'[^\w ]+')
+QPARSER = re.compile(r'\s*(-)?(?:(@|#|!)(:|=|~)?|(\w*)(:|=|~))?(?:"([^"\\]+|\\\\|\\.)*"|([^\s]+))')
+SPACES = re.compile(r'\s+')
 
 MAINFRAME = None
 
@@ -218,18 +275,25 @@ class Mainframe(tk.Tk):
         self.title(TITLE)
         self.protocol("WM_DELETE_WINDOW", self.exit_window)
         
+        # Cross-window variables
+        self.database = tk.StringVar()
+        
         # Add tabs
         self.tabs = ttk.Notebook(self)
         self.tabs.pack(expand=True, fill="both", padx=5, pady=5)
         self.tabs.bind("<<NotebookTabChanged>>", self.tab_change)
         
-        self.autocurator = AutoCurator()
-        self.downloader = Downloader()
-        self.searcher = Searcher()
-        self.lister = Lister()
+        self.autocurator = AutoCurator(self)
+        self.downloader = Downloader(self)
+        self.searcher = Searcher(self)
+        self.ssearcher = SingleSearcher(self)
+        self.deduper = DeDuper(self)
+        self.lister = Lister(self)
         
         self.tabs.add(self.autocurator, text="Auto Curator")
         self.tabs.add(self.downloader, text="Download URLs")
+        self.tabs.add(self.ssearcher, text="Game Finder")
+        self.tabs.add(self.deduper, text="Curation DeDuper")
         self.tabs.add(self.searcher, text="Bulk Search Titles")
         self.tabs.add(self.lister, text="Wiki Data")
         
@@ -275,6 +339,10 @@ class Mainframe(tk.Tk):
             self.downloader.stxt.txt.focus_set()
         elif tab == ".!searcher":
             self.searcher.stxta.txt.focus_set()
+        elif tab == ".!singlesearcher":
+            self.ssearcher.queryx.focus_set()
+        elif tab == ".!deduper":
+            self.focus_set()
         self.save()
     
     def check_freeze(self):
@@ -287,8 +355,13 @@ class Mainframe(tk.Tk):
         self.downloader.download_btn["state"] = "disabled"
         self.searcher.load_btn["state"] = "disabled"
         self.searcher.search_btn["state"] = "disabled"
+        self.ssearcher.search_btn["state"] = "disabled"
+        self.deduper.search_btn["state"] = "disabled"
         self.lister.find_btn["state"] = "disabled"
         #self.lister.stxt.txt["state"] = "disabled"
+        if self.ssearcher.lbox: self.ssearcher.lbox.search_btn["state"] = "disabled"
+        self.ssearcher.export_btn["state"] = "disabled"
+        self.ssearcher.export_all_btn["state"] = "disabled"
         
         self.title(TITLE + " - " + subtitle)
         
@@ -300,8 +373,13 @@ class Mainframe(tk.Tk):
         self.downloader.download_btn["state"] = "normal"
         self.searcher.load_btn["state"] = "normal"
         self.searcher.search_btn["state"] = "normal"
+        self.ssearcher.search_btn["state"] = "normal"
+        self.deduper.search_btn["state"] = "normal"
         self.lister.find_btn["state"] = "normal"
         #self.lister.stxt.txt["state"] = "normal"
+        if self.ssearcher.lbox: self.ssearcher.lbox.search_btn["state"] = "normal"
+        self.ssearcher.export_btn["state"] = "normal"
+        self.ssearcher.export_all_btn["state"] = "normal"
         
         self.title(TITLE)
         
@@ -320,8 +398,9 @@ class Mainframe(tk.Tk):
     
     def exit_window(self):
         if not frozen_ui:
-            if not CONSOLE_OPEN: toggle_console()
             # TODO: Python can't stop a thread easily, so make sure nothing is running before closing.
+            if not CONSOLE_OPEN: toggle_console()
+            if self.ssearcher.lbox: self.ssearcher.lbox.exit_window()
             self.save()
             self.destroy()
     
@@ -329,8 +408,10 @@ class Mainframe(tk.Tk):
         autocurator = {}
         downloader = {}
         searcher = {}
+        ssearcher = {}
+        deduper = {}
         
-        data = {"autocurator": autocurator, "downloader": downloader, "searcher": searcher, "debug_level": self.debug_level.get(), "tab": self.tabs.select()}
+        data = {"autocurator": autocurator, "downloader": downloader, "searcher": searcher, "ssearcher": ssearcher, "deduper": deduper, "debug_level": self.debug_level.get(), "tab": self.tabs.select(), "database": self.database.get()}
         
         # Save autocurator data
         autocurator["output"] = self.autocurator.output.get()
@@ -354,7 +435,6 @@ class Mainframe(tk.Tk):
         downloader["urls"] = self.downloader.stxt.txt.get("0.0", "end").strip()
         
         # Save searcher data
-        searcher["database"] = self.searcher.database.get()
         searcher["sources"] = self.searcher.sources.get()
         searcher["devpubs"] = self.searcher.devpubs.get()
         
@@ -367,6 +447,17 @@ class Mainframe(tk.Tk):
         searcher["titles"] = self.searcher.stxta.txt.get("0.0", "end").strip()
         searcher["urls"] = self.searcher.stxtb.txt.get("0.0", "end").strip()
         
+        # Save ssearcher data
+        ssearcher["lib"] = self.ssearcher.library.get()
+        ssearcher["query"] = self.ssearcher.query.get()
+        ssearcher["lquery"] = self.ssearcher.lquery.get().strip()
+        ssearcher["rdata"] = self.ssearcher.rdata
+        
+        # Save deduper data
+        deduper["src_chk"] = self.deduper.src_chk.get()
+        deduper["curations"] = self.deduper.curations.get()
+        deduper["rdata"] = self.deduper.rdata
+        
         with open("data.json", "w") as file: json.dump(data, file)
     
     def load(self):
@@ -376,11 +467,14 @@ class Mainframe(tk.Tk):
             # Set basic data
             self.debug_level.set(data["debug_level"])
             self.tabs.select(data["tab"])
+            self.database.set(data["database"])
             
             
             autocurator = data["autocurator"]
             downloader = data["downloader"]
             searcher = data["searcher"]
+            ssearcher = data["ssearcher"]
+            deduper = data["deduper"]
             
             # Load autocurator data
             set_entry(self.autocurator.output, autocurator["output"])
@@ -395,7 +489,7 @@ class Mainframe(tk.Tk):
             txt.delete("0.0", "end")
             txt.insert("1.0", autocurator["urls"])
             
-            # Save downloader data
+            # Load downloader data
             set_entry(self.downloader.output, downloader["output"])
             
             self.downloader.original.set(downloader["original"])
@@ -407,8 +501,7 @@ class Mainframe(tk.Tk):
             txt.delete("0.0", "end")
             txt.insert("1.0", downloader["urls"])
             
-            # Save searcher data
-            set_entry(self.searcher.database, searcher["database"])
+            # Load searcher data
             set_entry(self.searcher.sources, searcher["sources"])
             set_entry(self.searcher.devpubs, searcher["devpubs"])
             
@@ -426,7 +519,24 @@ class Mainframe(tk.Tk):
             txt.delete("0.0", "end")
             txt.insert("1.0", searcher["urls"])
             
-        except (FileNotFoundError, KeyError): pass
+            # Load ssearcher data
+            self.ssearcher.library.set(ssearcher["lib"])
+            self.ssearcher.query.set(ssearcher["query"])
+            self.ssearcher.lquery.set(ssearcher["lquery"])
+            self.ssearcher.set_results(ssearcher["rdata"])
+            
+            # Load deduper data
+            self.deduper.src_chk.set(deduper["src_chk"])
+            set_entry(self.deduper.curations, deduper["curations"])
+            self.deduper.set_results(deduper["rdata"])
+            
+        except (FileNotFoundError, KeyError):
+            # On first launch, check if in Flashpoint "Utilities" folder and set default data if so
+            dirs = __file__.replace("\\", "/").split("/")
+            if dirs[-2].lower() == "utilities" and "flashpoint" in dirs[-3].lower():
+                #self.database.set("../Data/flashpoint.sqlite")
+                set_entry(self.autocurator.output, "../Curations/Working")
+                set_entry(self.deduper.curations, "../Curations/Working")
 
 class Help(tk.Toplevel):
     def __init__(self, parent):
@@ -448,7 +558,7 @@ class Help(tk.Toplevel):
         self.destroy()
 
 class AutoCurator(tk.Frame):
-    def __init__(self):
+    def __init__(self, parent):
         # Create panel
         super().__init__(bg="white")
         tframe = tk.Frame(self, bg="white")
@@ -646,7 +756,7 @@ class AutoCurator(tk.Frame):
         threading.Thread(target=self.i_curate, daemon=True).start()
 
 class Downloader(tk.Frame):
-    def __init__(self):
+    def __init__(self, parent):
         # Create panel
         super().__init__(bg="white")
         tframe = tk.Frame(self, bg="white")
@@ -740,16 +850,17 @@ class Downloader(tk.Frame):
         threading.Thread(target=self.i_download, daemon=True).start()
 
 class Searcher(tk.Frame):
-    def __init__(self):
+    def __init__(self, parent):
         # Create panel
         super().__init__(bg="white")
         tframe = tk.Frame(self, bg="white")
         tframe.pack(fill="x", padx=5, pady=5)
+        self.parent = parent
         
         # Create options for locating the Flashpoint database
         dlabel = tk.Label(tframe, bg="white", text="Database:")
         dlabel.pack(side="left", padx=5)
-        self.database = ttk.Entry(tframe)
+        self.database = ttk.Entry(tframe, textvariable=parent.database)
         self.database.pack(side="left", fill="x", expand=True)
         db = ttk.Button(tframe, text="...", width=3, command=self.get_database)
         db.pack(side="left", padx=(0, 5))
@@ -815,9 +926,7 @@ class Searcher(tk.Frame):
     def get_database(self):
         # For changing the flashpoint database location
         db = tkfd.askopenfilename(filetypes=[("SQLite Database", "*.sqlite")])
-        if db:
-            self.database.delete(0, "end")
-            self.database.insert(0, db)
+        if db: self.parent.database.set(db)
     
     def s_load(dbloc, silent=False):
         try:
@@ -828,6 +937,7 @@ class Searcher(tk.Frame):
             # Next, get all required data through a query
             c.execute("select id, lower(title), lower(platform), lower(alternateTitles), lower(developer), lower(publisher), source, language, title from game")
             data = c.fetchall()
+            db.close()
             # Then format the data
             for i in range(len(data)):
                 datal = data[i]
@@ -856,7 +966,7 @@ class Searcher(tk.Frame):
     
     def load(self):
         freeze("Loading Database")
-        threading.Thread(target=lambda: Searcher.s_load(self.database.get(), False), daemon=True).start()
+        threading.Thread(target=lambda: Searcher.s_load(self.parent.database.get(), False), daemon=True).start()
     
     def search(self):
         freeze("Bulk Searching")
@@ -876,7 +986,7 @@ class Searcher(tk.Frame):
             EXACT_URL_CHECK = self.exact_url.get()
             DIFFLIB = self.difflib.get()
             
-            threading.Thread(target=lambda: Searcher.s_search(titles, urls, self.database.get(), self.sources.get(), self.devpubs.get(), PRIORITIES, LOG, STRIP_SUBTITLES, EXACT_URL_CHECK, DIFFLIB), daemon=True).start()
+            threading.Thread(target=lambda: Searcher.s_search(titles, urls, self.parent.database.get(), self.sources.get(), self.devpubs.get(), PRIORITIES, LOG, STRIP_SUBTITLES, EXACT_URL_CHECK, DIFFLIB), daemon=True).start()
         except Exception as e:
             print("Failed to start search, err ")
             print_err("  ")
@@ -1335,8 +1445,571 @@ class Searcher(tk.Frame):
         
         if not silent_: unfreeze()
 
+class SingleSearcher(tk.Frame):
+    def __init__(self, parent):
+        # Create panel
+        super().__init__(bg="white")
+        tframe = tk.Frame(self, bg="white")
+        tframe.pack(padx=5, pady=5, fill="x")
+        
+        self.parent = parent
+        
+        # Create options for locating the Flashpoint database
+        dlabel = tk.Label(tframe, bg="white", text="Database:")
+        dlabel.pack(side="left", padx=5)
+        self.database = ttk.Entry(tframe, textvariable=parent.database)
+        self.database.pack(side="left", fill="x", expand=True)
+        db = ttk.Button(tframe, text="...", width=3, command=self.get_database)
+        db.pack(side="left")
+        self.search_btn = ttk.Button(tframe, text="Search", command=self.search)
+        self.search_btn.pack(side="left", padx=5)
+        
+        # Create searching fields
+        mframe = tk.Frame(self, bg="white")
+        mframe.pack(fill="both", padx=5)
+        
+        # Library
+        self.library = tk.StringVar()
+        self.library.set("All*")
+        lib_lbl = tk.Label(mframe, bg="white", text="Library:")
+        lib_lbl.pack(side="left", padx=5)
+        lib = ttk.Combobox(mframe, width=10, textvariable=self.library, values=["All*", "Arcade*", "Theatre*", "All", "Arcade", "Theatre"])
+        lib.pack(side="left")
+        
+        # Query
+        self.query = tk.StringVar()
+        qlabel = tk.Label(mframe, bg="white", text="Query:")
+        qlabel.pack(side="left", padx=5)
+        self.queryx = ttk.Entry(mframe, textvariable=self.query)
+        self.queryx.pack(side="left", fill="x", expand=True)
+        self.queryx.bind('<Return>', lambda e: self.search())
+        more_btn = ttk.Button(mframe, text="...", width=3, command=self.open_large_box)
+        more_btn.pack(side="left", padx=(0, 5))
+        
+        # Large Query
+        self.lquery = tk.StringVar()
+        self.lbox = None
+        
+        # Buttons for copying results
+        bframe = tk.Frame(self, bg="white")
+        bframe.pack(padx=5, pady=(5, 0))
+        
+        copy_btn = ttk.Button(bframe, text="Copy Selected UUIDs", command=self.copy_uuids)
+        copy_btn.pack(side="left", padx=(0, 5))
+        copy_all_btn = ttk.Button(bframe, text="Copy All UUIDs", command=lambda: self.copy_uuids(True))
+        copy_all_btn.pack(side="left")
+        copy_t_btn = ttk.Button(bframe, text="Copy Selected Titles", command=self.copy_titles)
+        copy_t_btn.pack(side="left", padx=5)
+        copy_all_t_btn = ttk.Button(bframe, text="Copy All Titles", command=lambda: self.copy_titles(True))
+        copy_all_t_btn.pack(side="left")
+        
+        bframe2 = tk.Frame(self, bg="white")
+        bframe2.pack(pady=5)
+        
+        self.export_btn = ttk.Button(bframe2, text="Export Selected to New Playlist", command=self.export)
+        self.export_btn.pack(side="left", padx=5)
+        self.export_all_btn = ttk.Button(bframe2, text="Export All to New Playlist", command=lambda: self.export(True))
+        self.export_all_btn.pack(side="left")
+        
+        # Result count
+        self.rcount = tk.StringVar()
+        self.rcount.set("0 entries found")
+        rcount = tk.Label(self, bg="white", textvariable=self.rcount)
+        rcount.pack(padx=5)
+        
+        # Results treeview
+        self.rdata = []
+        self.results = ScrolledTreeview(self, columns=("Platform", "Source", "Library"), widths=(50, 50, 50, 50), command=self.sort_results)
+        self.results.pack(padx=5, pady=(0, 5), fill="both", expand=True)
+    
+    def get_database(self):
+        # For changing the flashpoint database location
+        db = tkfd.askopenfilename(filetypes=[("SQLite Database", "*.sqlite")])
+        if db: self.parent.database.set(db)
+    
+    def open_large_box(self):
+        if not self.lbox: self.lbox = BigQuery(self)
+    
+    def sort_results(self, i):
+        self.rdata.sort(key=lambda x: x[i+1].lower())
+        self.set_results(self.rdata)
+        
+    def set_results(self, results):
+        self.rdata = results
+        
+        self.results.delete(*self.results.get_children())
+        for i, result in enumerate(self.rdata):
+            self.results.insert("", index="end", iid=i, text=result[1], values=tuple(result[2:]))
+        
+        self.rcount.set(str(len(self.rdata)) + " entries found")
+    
+    def get_results(self, all, pos=0):
+        items = []
+        if all:
+            items = [entry[pos] for entry in self.rdata]
+        else:
+            for s in self.results.selection():
+                items.append(self.rdata[int(s)][pos])
+        return items
+    def copy_titles(self, all=False):
+        titles = self.get_results(all, 1)
+        if titles: pyperclip.copy('\n'.join(titles))
+    def copy_uuids(self, all=False):
+        uuids = self.get_results(all)
+        if uuids: pyperclip.copy('\n'.join(uuids))
+    def export(self, all=False):
+        uuids = self.get_results(all)
+        if uuids:
+            try:
+                con = sqlite3.connect(self.parent.database.get())
+            except Exception as e:
+                if not silent: tkm.showerror(message=f"Could not connect to database, {e.__class__.__name__}: {str(e)}")
+                print("[ERR]  Could not connect to database, err:")
+                print_err("         ")
+                return
+            
+            cur = con.cursor()
+            
+            def create_playlist(lib):
+                # Create playlist
+                pid = uuid.uuid4()
+                cur.execute("INSERT OR REPLACE INTO playlist VALUES (?, '!Search Results!', 'Exported search results gathered from fpcurator.', 'fpcurator', '', ?, 0)", (pid, lib))
+                # Delete existing items in the playlist (if they exist, which they shouldn't)
+                cur.execute("DELETE FROM playlist_game WHERE playlistId = ?", (pid,))
+                # Insert items into playlist
+                cur.executemany("INSERT INTO playlist_game (playlistId, 'order', notes, gameId) VALUES (?, ?, '', ?)", [(pid, i, uuid) for i, uuid in enumerate(uuids)])
+            
+            lib = self.library.get()
+            if lib[-1] == "*": tlib = lib[:-1].lower()
+            else: tlib = lib.lower()
+            if tlib == "all":
+                create_playlist("arcade")
+            elif tlib == "arcade":
+                create_playlist("arcade")
+            elif tlib == "theatre":
+                create_playlist("theatre")
+            tkm.showinfo(message='Exported search results to playlist "!Search Results!".')
+            
+            con.commit()
+            con.close()
+    
+    def parse_query(cur, query, lib, silent=False):
+        if not query.strip(): return ""
+        
+        if lib[-1] == "*":
+            tlib = lib[:-1].lower()
+            extremewhere = "(NOT extreme) AND "
+        else:
+            tlib = lib.lower()
+            extremewhere = ""
+        
+        if tlib == "all": libwhere = ""
+        else: libwhere = "library = '" + INV.sub("", tlib) + "' AND "
+        
+        # Start by tokenizing query
+        tquery = SPACES.sub(" ", query).strip()
+        tokens = []
+        i, l = 0, len(tquery)
+        while i < l:
+            m = QPARSER.match(tquery, i)
+            if not m: return "" # For now
+            tokens.append(m)
+            i = m.span()[1]
+        # Next turn tokens into string list
+        sql = []
+        args = []
+        
+        i, l = 1, len(tokens)
+        
+        if not SingleSearcher.parse_token(cur, sql, args, tokens[0]): return ""
+        while i < l:
+            if tokens[i][0].strip() == "AND": pass
+            elif tokens[i][0].strip() == "OR":
+                sql.append("OR")
+                if not SingleSearcher.parse_token(cur, sql, args, tokens[i+1]): return ""
+                i += 1
+            else:
+                sql.append("AND")
+                if not SingleSearcher.parse_token(cur, sql, args, tokens[i]): return ""
+            i += 1
+        
+        # Join and return sql
+        return f"SELECT id, title, platform, source, library FROM game WHERE {libwhere}{extremewhere}({' '.join(sql)})", args
+    
+    def parse_token(cur, sql, args, token):
+        # Check invert
+        if token[1]: invert = "NOT ("
+        else: invert = "("
+        
+        # Get regex parts
+        mode = token[3] or token[5] or ":"
+        
+        field = token[2] or token[4]
+        if field in FIELDS: field = FIELDS[field]
+        
+        data = token[7]
+        if not data: data = token[6].replace("\\\\", "\\").replace('\\"', '"')
+        
+        if field in {"no", "not", "missing", "has", "is"}:
+            tfield = AM_PATTERN.sub("", data) # Sanatize the input
+            if tfield in FIELDS: tfield = FIELDS[tfield]
+            
+            if bool(token[1]) != (field == "has" or field == "is"):
+                sql.append(f"NOT ({tfield} = '' OR {tfield} = 0)")
+            else:
+                sql.append(f"({tfield} = '' OR {tfield} = 0)")
+        elif field == "tags":
+            comps = []
+            tags = [t.strip() for t in data.split(";")]
+            for tag in tags:
+                cur.execute("SELECT tagId FROM tag_alias WHERE name = ?", (tag,))
+                try: tagID = cur.fetchone()[0]
+                except: return False
+                comps.append("tagId = ?")
+                args.append(tagID)
+            # There's definitely a better way to search tags but whatever
+            sql.append(f"{invert}EXISTS (SELECT tagId FROM game_tags_tag tags WHERE game.id = tags.gameId AND ({' OR '.join(comps)})))")
+        elif mode == ":":
+            comps = []
+            if field == "@":
+                for keyword in data.strip().split(" "):
+                    comps.append("(developer LIKE ? OR publisher LIKE ? OR source LIKE ?)")
+                    key = f'%{keyword}%'
+                    args.extend((key, key, key))
+            elif not field:
+                for keyword in data.strip().split(" "):
+                    comps.append(f"(title LIKE ? OR alternateTitles LIKE ?)")
+                    key = f'%{keyword}%'
+                    args.extend((key, key))
+            else:
+                for keyword in data.strip().split(" "):
+                    comps.append(field + " LIKE ?")
+                    args.append(f'%{keyword}%')
+            sql.append(invert + ' AND '.join(comps) + ")")
+        elif mode == "=":
+            if field == "@":
+                sql.append(invert + "developer = ? OR publisher = ? OR source = ?)")
+                args.extend((data, data, data))
+            elif not field:
+                # Alternate titles are yikes man
+                sql.append(invert + "title = ? OR alternateTitles = ? OR alternateTitles LIKE ? OR alternateTitles LIKE ? OR alternateTitles LIKE ?)")
+                args.extend((data, data, '%; '+data, data+'; %', '%; '+data+'; %'))
+            else:
+                sql.append(invert + field + " = ?)")
+                args.append(data)
+        elif mode == "~":
+            if field == "@":
+                sql.append(invert + "developer LIKE ? OR publisher LIKE ? OR source LIKE ?)")
+                args.extend((data, data, data))
+            elif not field:
+                sql.append(invert + "title LIKE ? OR altnerateTitles LIKE ? )")
+                args.extend((data, data))
+            else:
+                sql.append(invert + field + " LIKE ?)")
+                args.append(data)
+        
+        return True
+    
+    def execute_search(cur, sql, args, callback, silent=False):
+        print("[INFO] Attempting to search through the Flashpoint database")
+        try:
+            cur.execute(sql, args)
+            data = cur.fetchall()
+            if callback: callback(data)
+        
+            if not silent: unfreeze()
+            return data
+        except Exception as e:
+            if not silent: tkm.showerror(message=f"Could not complete search, {e.__class__.__name__}: {str(e)}")
+            print("[ERR]  Could not complete search, err:")
+            print_err("         ")
+            if not silent: unfreeze()
+    
+    def search(self, large=False, silent=False):
+        try:
+            con = sqlite3.connect(self.parent.database.get())
+        except Exception as e:
+            if not silent: tkm.showerror(message=f"Could not connect to database, {e.__class__.__name__}: {str(e)}")
+            print("[ERR]  Could not connect to database, err:")
+            print_err("         ")
+            return
+        
+        cur = con.cursor()
+        try:
+            if large:
+                sql = SingleSearcher.parse_query(cur, self.lquery.get().strip(), self.library.get())
+            else:
+                sql = SingleSearcher.parse_query(cur, self.query.get().strip(), self.library.get())
+        except Exception as e:
+            sql = ""
+            print_err()
+        
+        if sql:
+            #print(sql[0])
+            #print(sql[1])
+            freeze("Finding Flashpoint Games")
+            SingleSearcher.execute_search(cur, sql[0], sql[1], self.set_results, False)
+            #threading.Thread(target=lambda: SingleSearcher.i_search(db, sql, False), daemon=True).start()
+        else:
+            self.set_results([])
+        con.close()
+
+class BigQuery(tk.Toplevel):
+    def __init__(self, parent):
+        # Create big query thing
+        super().__init__()
+        self.minsize(200, 200)
+        self.geometry("450x350")
+        self.title(TITLE + " - Large Search Box")
+        self.protocol("WM_DELETE_WINDOW", self.exit_window)
+        self.parent = parent
+        
+        self.stxt = ScrolledText(self, nohsb=True, width=1, height=1)
+        self.stxt.txt.delete("0.0", "end")
+        self.stxt.txt.insert("0.0", self.parent.lquery.get())
+        self.stxt.pack(padx=5, pady=5, expand=True, fill="both")
+        
+        self.search_btn = ttk.Button(self, text="Search", command=self.search)
+        self.search_btn.pack(padx=5, pady=(0, 5))
+        if frozen_ui: self.search_btn["state"] = "disabled"
+    
+    def exit_window(self):
+        self.parent.lquery.set(self.stxt.txt.get("0.0", "end"))
+        self.parent.lbox = None
+        self.destroy()
+    
+    def search(self):
+        self.parent.lquery.set(self.stxt.txt.get("0.0", "end"))
+        self.parent.search(True)
+
+TEMP_RESULTS = None
+class DeDuper(tk.Frame):
+    def __init__(self, parent):
+        # Create panel
+        super().__init__(bg="white")
+        self.parent = parent
+        
+        # Create options for locating the Flashpoint database
+        tframe = tk.Frame(self, bg="white")
+        tframe.pack(padx=5, pady=5, fill="x")
+        
+        dlabel = tk.Label(tframe, bg="white", text="Database:")
+        dlabel.pack(side="left", padx=5)
+        self.database = ttk.Entry(tframe, textvariable=parent.database)
+        self.database.pack(side="left", fill="x", expand=True)
+        db = ttk.Button(tframe, text="...", width=3, command=self.get_database)
+        db.pack(side="left")
+        self.search_btn = ttk.Button(tframe, text="Check", command=self.search)
+        self.search_btn.pack(side="left", padx=5)
+        
+        # Create options for curations folder
+        tframe2 = tk.Frame(self, bg="white")
+        tframe2.pack(padx=5, fill="x")
+        
+        olabel = tk.Label(tframe2, bg="white", text="Curations Folder:")
+        olabel.pack(side="left", padx=5)
+        self.curations = ttk.Entry(tframe2)
+        self.curations.pack(side="left", fill="x", expand=True)
+        folder = ttk.Button(tframe2, text="...", width=3, command=self.folder)
+        folder.pack(side="left", padx=(0, 5))
+        #self.refresh_btn = ttk.Button(tframe2, text="Refresh", command=self.refresh)
+        #self.refresh_btn.pack(side="left", padx=5)
+        
+        # Label for important information
+        lbl = tk.Label(self, bg="white", text='IMPORTANT: Click another tab besides "Curate" before pressing "Check".')
+        lbl.pack(padx=5, pady=5)
+        
+        # Buttons for copying/modifying results
+        bframe = tk.Frame(self, bg="white")
+        bframe.pack(padx=5)
+        
+        self.src_chk = tk.BooleanVar()
+        self.src_chk.set(True)
+        src_chk = tk.Checkbutton(bframe, bg="white", text="Check Source", var=self.src_chk)
+        src_chk.pack(side="left")
+        Tooltip(src_chk, text="When checked, the deduper will check to see if the source url is in the database. Turn this off if you have multiple games per the same source (like from a local disk)")
+        
+        del_btn = ttk.Button(bframe, text="Delete Selected Curations", command=self.delete_cur)
+        del_btn.pack(side="left", padx=5)
+        del_dup_btn = ttk.Button(bframe, text="Delete Definite Duplicates", command=lambda: self.delete_cur(True))
+        del_dup_btn.pack(side="left")
+        
+        bframe2 = tk.Frame(self, bg="white")
+        bframe2.pack(padx=5, pady=5)
+        
+        copy_btn = ttk.Button(bframe2, text="Copy Selected Titles", command=self.copy_cur)
+        copy_btn.pack(side="left", padx=5)
+        copy_match_btn = ttk.Button(bframe2, text="Copy Selected Match's UUID", command=self.copy_match)
+        copy_match_btn.pack(side="left")
+        
+        # Results treeview
+        self.rdata = []
+        self.results = ScrolledTreeview(self, columns=("Duplicate", "Message",))
+        self.results.pack(padx=5, pady=(0, 5), fill="both", expand=True)
+        
+        # Update
+        self.update = False
+        self.after(100, self.check_update)
+    
+    def get_database(self):
+        # For changing the flashpoint database location
+        db = tkfd.askopenfilename(filetypes=[("SQLite Database", "*.sqlite")])
+        if db: self.parent.database.set(db)
+    def folder(self):
+        # For changing the output folder
+        folder = tkfd.askdirectory()
+        if folder: set_entry(self.curations, folder)
+    
+    def delete_cur(self, dups=False):
+        if dups:
+            for i in range(len(self.rdata)-1, -1, -1):
+                data = self.rdata[i]
+                if data[3] == "Yes":
+                    fpclib.delete(data[0])
+                    del self.rdata[i]
+        else:
+            sels = self.results.selection()
+            if sels:
+                for sel in reversed(sels):
+                    isel = int(sel)
+                    fpclib.delete(self.rdata[isel][0])
+                    del self.rdata[isel]
+        self.set_results(self.rdata)
+    def copy_cur(self):
+        data = [self.rdata[int(sel)][2] for sel in self.results.selection()]
+        if data: pyperclip.copy("\n".join(data))
+    def copy_match(self):
+        data = [self.rdata[int(sel)][1] for sel in self.results.selection()]
+        if data: pyperclip.copy("\n".join(data))
+    
+    def check_update(self):
+        if self.update:
+            self.set_results(self.rdata)
+            self.update = False
+        self.after(100, self.check_update)
+    def set_results(self, results):
+        self.rdata = results
+        
+        self.results.delete(*self.results.get_children())
+        for i, result in enumerate(results):
+            self.results.insert("", index="end", iid=i, text=result[2], values=tuple(result[3:]))
+    
+    def i_search(folder, db, src_chk, ui=None):
+        try:
+            con = sqlite3.connect(db)
+        except Exception as e:
+            if ui: tkm.showerror(message=f"Could not connect to database, {e.__class__.__name__}: {str(e)}")
+            print("[ERR]  Could not connect to database, err:")
+            print_err("         ")
+            return
+        
+        if not folder:
+            if silent: pass
+            else: tkm.showerror(message="You must specify a folder containing curations to check through.")
+            return
+        
+        print("[INFO] Deduping curations")
+        fpclib.TABULATION += 1
+        fpclib.DEBUG_LEVEL, dl = 1, fpclib.DEBUG_LEVEL
+        results = []
+        cur = con.cursor()
+        for cf in glob.glob(folder+"/*"):
+            loc = max(cf.rfind("/"), cf.rfind("\\"))+1 # Funny how if nether are found it goes to the beginning of the string (-1+1=0)
+            fname = cf[loc:]
+            fpclib.debug("Found curation {}", 1, fname)
+            
+            if fname[0] != "_":
+                try:
+                    c = fpclib.load(cf)
+                    x, dup, msg = DeDuper.find_msg(c, cur, src_chk)
+                    results.append((cf, x, c.title, dup, msg))
+                except:
+                    print_err("           ")
+        
+        fpclib.TABULATION -= 1
+        fpclib.DEBUG_LEVEL = dl
+        
+        con.close()
+        
+        if ui:
+            ui.rdata = results
+            ui.update = True
+            unfreeze()
+    
+    def find_msg(c, cur, src_chk):
+        platform = c.platform
+        
+        # Check launch command
+        cmd = c.cmd
+        if cmd and len(cmd) > 7:
+            cmd = cmd[7:]
+            cur.execute(
+                "SELECT id FROM game WHERE platform = ? AND (launchCommand LIKE ? OR launchCommand LIKE ? OR launchCommand LIKE ?)",
+                (platform, "%"+cmd, "%"+cmd+"?%", "%"+cmd+'"%')
+            )
+            x = cur.fetchone()
+            if x: return x[0], "Yes", "Launch command found"
+        
+        # Check source url
+        if src_chk:
+            src = c.src
+            if src and len(src) > 7:
+                src = src[7:]
+                cur.execute(
+                    "SELECT id FROM game WHERE platform = ? AND (source LIKE ? OR source LIKE ?)",
+                    (platform, "%"+src, "%"+src+' %')
+                )
+                x = cur.fetchone()
+                if x: return x[0], "Yes", "Source url found"
+        
+        # Check title and alternate titles
+        if c.title:
+            titles = [c.title]
+            alts = c.alts
+            if alts:
+                if type(alts) == str:
+                    for alt in alts.split(";"):
+                        salt = alt.strip()
+                        if salt:
+                            titles.append(salt)
+                else:
+                    for alt in alts:
+                        salt = alt.strip()
+                        if salt:
+                            titles.append(salt)
+            
+            # Exact title match
+            for title in titles:
+                cur.execute(
+                    "SELECT id FROM game WHERE platform = ? AND (title = ? OR alternateTitles = ? OR alternateTitles LIKE ? OR alternateTitles LIKE ? OR alternateTitles LIKE ?)",
+                    (platform, title, title, '%; '+title, title+'; %', '%; '+title+'; %')
+                )
+                x = cur.fetchone()
+                if x: return x[0], "Probably", "Exact title found"
+            
+            # Partial title match
+            for title in titles:
+                comps, args = [], [platform]
+                for keyword in SPACES.sub(" ", title.strip()).split(" "):
+                    comps.append('(title LIKE ? OR alternateTitles LIKE ?)')
+                    key = f'%{keyword}%'
+                    args.extend((key, key))
+                cur.execute("SELECT id FROM game WHERE platform = ? AND " + ' AND '.join(comps), args)
+                x = cur.fetchone()
+                if x: return x[0], "Probably", "Title parts found"
+        
+        return None, "Not Likely", ""
+    
+    def search(self):
+        freeze("DeDuping Curations")
+        folder = self.curations.get()
+        db = self.parent.database.get()
+        src_chk = self.src_chk.get()
+        if folder and db:
+            threading.Thread(target=lambda: DeDuper.i_search(folder, db, src_chk, self), daemon=True).start()
+
 class Lister(tk.Frame):
-    def __init__(self):
+    def __init__(self, parent):
         # Create panel
         super().__init__(bg="white")
         tframe = tk.Frame(self, bg="white")
@@ -1379,20 +2052,178 @@ class Lister(tk.Frame):
 class ScrolledText(tk.Frame):
     def __init__(self, parent, **kwargs):
         super().__init__(parent)
+        nohsb = False
+        if "nohsb" in kwargs:
+            nohsb = kwargs["nohsb"]
+            del kwargs["nohsb"]
         
-        self.txt = tk.Text(self, **kwargs)
-        txtV = ttk.Scrollbar(self, orient="vertical", command=self.txt.yview)
-        txtH = ttk.Scrollbar(self, orient="horizontal", command=self.txt.xview)
-        self.txt.configure(yscrollcommand=txtV.set, xscrollcommand=txtH.set)
-        
-        self.txt.delete("0.0", "end")
-        
-        self.txt.grid(row=0, column=0, sticky="nsew")
-        txtV.grid(row=0, column=1, sticky="ns")
-        txtH.grid(row=1, column=0, sticky="ew")
-
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
+        
+        self.txt = tk.Text(self, **kwargs)
+        self.txt.delete("0.0", "end")
+        self.txt.grid(row=0, column=0, sticky="nsew")
+        
+        txtV = ttk.Scrollbar(self, orient="vertical", command=self.txt.yview)
+        self.txt.configure(yscrollcommand=txtV.set)
+        txtV.grid(row=0, column=1, sticky="ns")
+        
+        if not nohsb:
+            txtH = ttk.Scrollbar(self, orient="horizontal", command=self.txt.xview)
+            self.txt.configure(xscrollcommand=txtH.set)
+            txtH.grid(row=1, column=0, sticky="ew")
+
+class ScrolledTreeview(tk.Frame):
+    def __init__(self, parent, **kwargs):
+        super().__init__(parent)
+        widths = ()
+        if "widths" in kwargs:
+            widths = kwargs["widths"]
+            del kwargs["widths"]
+        #nohsb = False
+        #if "nohsb" in kwargs:
+        #    nohsb = kwargs["nohsb"]
+        #    del kwargs["nohsb"]
+        command = None
+        if "command" in kwargs:
+            command = kwargs["command"]
+            del kwargs["command"]
+        
+        self.tree = ttk.Treeview(self, **kwargs)
+        self.tree.grid(row=0, column=0, sticky="nsew")
+        if "columns" in kwargs:
+            if command:
+                for i, text in enumerate(kwargs["columns"]):
+                    self.tree.heading('#'+str(i+1), text=text, command=functools.partial(command, i+1))
+            else:
+                for i, text in enumerate(kwargs["columns"]):
+                    self.tree.heading('#'+str(i+1), text=text)
+            if widths:
+                for i in range(len(kwargs["columns"])):
+                    self.tree.column("#"+str(i+1), minwidth=10, width=widths[0])
+        
+        if command: self.tree.heading("#0", text="Name", command=lambda: command(0))
+        else: self.tree.heading("#0", text="Name")
+        
+        if widths: self.tree.column("#0", minwidth=10, width=widths[0])
+        
+        self.rowconfigure(0, weight=1)
+        self.columnconfigure(0, weight=1)
+        
+        treeV = ttk.Scrollbar(self, orient="vertical", command=self.tree.yview)
+        self.tree.configure(yscrollcommand=treeV.set)
+        treeV.grid(row=0, column=1, sticky="ns")
+        
+        #if not nohsb:
+        #    treeH = ttk.Scrollbar(self, orient="horizontal", command=self.tree.xview)
+        #    self.tree.configure(xscrollcommand=treeH.set)
+        #    treeH.grid(row=1, column=0, sticky="ew")
+        
+    def __getattr__(self, name):
+        return getattr(object.__getattribute__(self, "tree"), name)
+
+class Tooltip:
+    '''
+    It creates a tooltip for a given widget as the mouse goes on it.
+
+    http://stackoverflow.com/questions/3221956/what-is-the-simplest-way-to-make-tooltips-in-tkinter/36221216#36221216
+    http://www.daniweb.com/programming/software-development/code/484591/a-tooltip-class-for-tkinter
+
+    - Originally written by vegaseat on 2014.09.09.
+    - Modified to include a delay time by Victor Zaccardo on 2016.03.25.
+    - Modified
+        - to correct extreme right and extreme bottom behavior,
+        - to stay inside the screen whenever the tooltip might go out on
+          the top but still the screen is higher than the tooltip,
+        - to use the more flexible mouse positioning,
+        - to add customizable background color, padding, waittime and
+          wraplength on creation
+      by Alberto Vassena on 2016.11.05.
+    - Modified by mathgeniuszach to be smaller.
+    '''
+
+    def __init__(self, widget, *, bg='#FFFFFF', pad=(0, 0, 0, 0), text='widget info', waittime=400, wraplength=250):
+        self.waittime = waittime  # in miliseconds, originally 500
+        self.wraplength = wraplength  # in pixels, originally 180
+        self.widget = widget
+        self.text = text
+        self.widget.bind("<Enter>", self.onEnter)
+        self.widget.bind("<Leave>", self.onLeave)
+        self.widget.bind("<ButtonPress>", self.onLeave)
+        self.bg = bg
+        self.pad = pad
+        self.id = None
+        self.tw = None
+
+    def onEnter(self, event=None):
+        self.schedule()
+    def onLeave(self, event=None):
+        self.unschedule()
+        self.hide()
+    def schedule(self):
+        self.unschedule()
+        self.id = self.widget.after(self.waittime, self.show)
+    def unschedule(self):
+        id_ = self.id
+        self.id = None
+        if id_:
+            self.widget.after_cancel(id_)
+
+    def show(self):
+        def tip_pos_calculator(widget, label, *, tip_delta=(10, 5), pad=(5, 3, 5, 3)):
+            w = widget
+
+            s_width, s_height = w.winfo_screenwidth(), w.winfo_screenheight()
+            width, height = (
+                pad[0] + label.winfo_reqwidth() + pad[2],
+                pad[1] + label.winfo_reqheight() + pad[3]
+            )
+
+            mouse_x, mouse_y = w.winfo_pointerxy()
+            x1, y1 = mouse_x + tip_delta[0], mouse_y + tip_delta[1]
+            x2, y2 = x1 + width, y1 + height
+
+            x_delta = x2 - s_width
+            if x_delta < 0:
+                x_delta = 0
+            y_delta = y2 - s_height
+            if y_delta < 0:
+                y_delta = 0
+
+            offscreen = (x_delta, y_delta) != (0, 0)
+            if offscreen:
+                if x_delta:
+                    x1 = mouse_x - tip_delta[0] - width
+
+                if y_delta:
+                    y1 = mouse_y - tip_delta[1] - height
+
+            offscreen_again = y1 < 0  # out on the top
+            if offscreen_again:
+                y1 = 0
+
+            return x1, y1
+
+        bg = self.bg
+        pad = self.pad
+        widget = self.widget
+
+        # Creates a toplevel window
+        self.tw = tk.Toplevel(widget)
+        # Leaves only the label and removes the app window
+        self.tw.wm_overrideredirect(True)
+
+        win = tk.Frame(self.tw, background=bg, borderwidth=0)
+        label = tk.Label(win, text=self.text, justify=tk.LEFT, background=bg, relief=tk.SOLID, borderwidth=1, wraplength=self.wraplength)
+
+        label.grid(padx=(pad[0], pad[2]), pady=(pad[1], pad[3]), sticky=tk.NSEW)
+        win.grid()
+
+        self.tw.wm_geometry("+%d+%d" % tip_pos_calculator(widget, label))
+
+    def hide(self):
+        if self.tw: self.tw.destroy()
+        self.tw = None
 
 if __name__ == "__main__":
     if len(sys.argv) == 1:
@@ -1402,6 +2233,7 @@ if __name__ == "__main__":
             MAINFRAME.mainloop()
         except Exception as e:
             tkm.showerror(message=f"Fatal {e.__class__.__name__}: {str(e)}")
+            traceback.print_exc()
     else:
         # Command line args time!
         parser = argparse.ArgumentParser(description="fpcurator is a bulk tool that makes certain curation tasks easier. There are five modes, -mC (default, autocurator mode), -mG (update site definitions mode), -mD (download urls mode), -mS (bulk search mode), and -mW (get wiki data mode). loc is a file containing urls to do something with, or if -l is set, a url. You can specify as many as you want.")
