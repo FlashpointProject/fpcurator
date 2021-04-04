@@ -37,7 +37,7 @@ import fpclib
 # os, sys, time, re, json,
 # bs4, argparse, codecs, datetime, glob,
 # sqlite3, threading, traceback, webbrowser, zipfile,
-# urllib, difflib, googletrans, and Levenshtein.
+# urllib, difflib, googletrans, qfile, and Levenshtein.
 
 
 # This is the regex that will be used to match the site url. It is required!

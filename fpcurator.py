@@ -34,6 +34,7 @@ import datetime
 import functools
 import pyperclip
 import googletrans
+import qfile
 import glob
 import importlib
 import sqlite3
