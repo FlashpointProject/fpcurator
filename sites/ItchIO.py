@@ -10,7 +10,7 @@ VIEW_DATA = re.compile('{"url":(.*?{(.*?{.*?}|[^{}]*)*}|[^{}]*)*}')
 
 UNITY_EMBED = """<html>
     <head>
-        <title>Title Goes Here</title>
+        <title>%s</title>
         <style>
             body { background-color: #000000; height: 100%%; margin: 0; }
             #embed { position: absolute; top: 0; bottom: 0; left: 0; right: 0; margin: auto; }
@@ -21,12 +21,30 @@ UNITY_EMBED = """<html>
             <embed src="%s" bgColor=#000000  width=100%% height=100%% type="application/vnd.unity" disableexternalcall="true" disablecontextmenu="true" disablefullscreen="false" firstframecallback="unityObject.firstFrameCallback();">
         </div>
     </body>
-</html>"""
+</html>
+"""
+
+HTML_EMBED = """<html>
+    <head>
+        <title>%s</title>
+        <style>
+            body { background-color: #000000; height: 100%%; margin: 0; }
+            %s
+        </style>
+    </head>
+    <body>
+        %s
+    </body>
+</html>
+"""
+STYLE_IFRAME = "iframe { width: 100%; height: 100%; }"
+IFRAME = """<iframe src="%s"></iframe>"""
 
 class ItchIO(fpclib.Curation):
     def parse(self, soup):
         # Get title
         self.title = soup.find("h1").text
+        # Get logo
         try:
             self.logo = soup.select_one(".header.has_image > img")["src"]
         except:
@@ -42,34 +60,59 @@ class ItchIO(fpclib.Curation):
         if url[-1] == "/": url = url[:-1]
 
         # Get launch command and stuff
-        script = soup.select_one(".inner_column > script").string
-        
-        if script:
-            platform = PLATFORM.search(script)[1]
-            data = json.loads(VIEW_DATA.search(script)[0])
-
-            self.file = data["url"]
-            self.platform = platform
-            if platform == "Flash":
-                self.app = fpclib.FLASH
-                self.cmd = fpclib.normalize(data["url"])
-                self.embed = ""
-            elif platform == "Html":
-                self.platform = "HTML5"
-                self.app = fpclib.BASILISK
-                self.cmd
-            elif platform == "Unity":
-                self.app = fpclib.UNITY
-                self.cmd = url
-                self.embed = UNITY_EMBED % (soup.select_one("#unity_drop")["style"], data["url"])
-            elif platform == "Java":
-                self.app = fpclib.JAVA
-                self.cmd = url
-                self.embed = str(soup.find("applet"))
-            else:
-                raise ValueError("Unknown game type found on webpage")
+        # First check for html iframe
+        placeholder = soup.select_one("div.iframe_placeholder")
+        iframe = soup.select_one(".embed_wrapper > div > iframe")
+        if iframe:
+            self.platform = "HTML5"
+            self.app = fpclib.BASILISK
+            self.cmd = url
+            self.file = ""
+            self.embed = HTML_EMBED % (self.title, STYLE_IFRAME, str(iframe))
+        elif placeholder and "data-iframe" in placeholder.attrs:
+            self.platform = "HTML5"
+            self.app = fpclib.BASILISK
+            self.cmd = url
+            self.file = ""
+            self.embed = HTML_EMBED % (self.title, STYLE_IFRAME, placeholder["data-iframe"])
         else:
-            raise ValueError("No game found on webpage")
+            # No html frame, so check for other potential games
+            selem = soup.select_one(".inner_column > script")
+            if selem:
+                # If script exists on page, try to find the game from the code
+                script = selem.string
+
+                platform = PLATFORM.search(script)[1]
+                try:
+                    data = json.loads(VIEW_DATA.search(script)[0])
+
+                    self.file = data["url"]
+                    self.platform = platform
+                    if platform == "Flash":
+                        self.app = fpclib.FLASH
+                        self.cmd = fpclib.normalize(data["url"])
+                        self.embed = ""
+                    elif platform == "Html":
+                        self.platform = "HTML5"
+                        self.app = fpclib.BASILISK
+                        self.cmd = url # Helps deal with url-locks, I guess
+                        self.embed = HTML_EMBED % (self.title, STYLE_IFRAME, IFRAME % fpclib.normalize(data["url"]))
+                    elif platform == "Unity":
+                        self.app = fpclib.UNITY
+                        self.cmd = url
+                        self.embed = UNITY_EMBED % (self.title, soup.select_one("#unity_drop")["style"], data["url"])
+                    elif platform == "Java":
+                        self.app = fpclib.JAVA
+                        self.cmd = url
+                        self.embed = str(soup.find("applet"))
+                    else:
+                        raise ValueError("Unknown game type found on webpage")
+                except TypeError:
+                    # Ok so, the script doesn't work right, and
+                    # no iframe on page, so we ain't got a clue about this one
+                    raise ValueError("Script found but can't locate game")
+            else:
+                raise ValueError("No game found on webpage")
     
     def get_files(self):
         # If there is a file to download, download it
