@@ -1003,12 +1003,12 @@ class Searcher(tk.Frame):
             
             if len(titles) != len(urls):
                 print('Failed (input count mismatch)')
-                if not silent: tkm.showerror(message=f"Input data count mismatch: # of titles is {len(titles)}, while # of urls is {len(urls)}.")
+                if not silent_: tkm.showerror(message=f"Input data count mismatch: # of titles is {len(titles)}, while # of urls is {len(urls)}.")
                 return
             input_count = len(titles)
             if input_count == 0:
                 print('Failed (no data)')
-                if not silent: tkm.showerror(message=f"No input data to search with; you must provide at least one title and url to search with.")
+                if not silent_: tkm.showerror(message=f"No input data to search with; you must provide at least one title and url to search with.")
                 return
             
             # Format input
@@ -1023,13 +1023,13 @@ class Searcher(tk.Frame):
             try: src_regex = re.compile(src_regex_str, re.I)
             except:
                 print('Failed (incorrect source regex)')
-                if not silent: tkm.showerror(message=f"Your source regex is formatted incorrectly.")
+                if not silent_: tkm.showerror(message=f"Your source regex is formatted incorrectly.")
                 return
             # Get devpubs regex
             try: dp_regex = re.compile(dp_regex_str, re.I)
             except:
                 print('Failed (incorrect dev/pub regex)')
-                if not silent: tkm.showerror(message=f"Your developer/publisher regex is formatted incorrectly.")
+                if not silent_: tkm.showerror(message=f"Your developer/publisher regex is formatted incorrectly.")
                 return
             
             print('Done (%.3f secs)' % (time.time() - period))
@@ -1567,7 +1567,8 @@ class SingleSearcher(tk.Frame):
             try:
                 con = sqlite3.connect(self.parent.database.get())
             except Exception as e:
-                if not silent: tkm.showerror(message=f"Could not connect to database, {e.__class__.__name__}: {str(e)}")
+                #if not silent:
+                tkm.showerror(message=f"Could not connect to database, {e.__class__.__name__}: {str(e)}")
                 print("[ERR]  Could not connect to database, err:")
                 print_err("         ")
                 return
@@ -1908,7 +1909,7 @@ class DeDuper(tk.Frame):
             return
         
         if not folder:
-            if silent: pass
+            #if silent: pass
             else: tkm.showerror(message="You must specify a folder containing curations to check through.")
             return
         
@@ -2329,7 +2330,7 @@ if __name__ == "__main__":
                     
                 elif args.mode == "D":
                     # Download urls
-                    errs = fpclib.download_all(links, output, args.w, args.k, not args.e)
+                    errs = fpclib.download_all(urls, output, args.w, args.k, not args.e)
                     if errs and args.x:
                         fpclib.write("errors.txt", [i for i,e,d in errs])
                         fpclib.debug('[INFO] Wrote errored urls to errors.txt file', 1)
