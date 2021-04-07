@@ -56,6 +56,11 @@ class ItchIO(fpclib.Curation):
         # Set publisher
         self.pub = "itch.io"
 
+        # Release date
+        try:
+            self.date = fpclib.DP_UK.parse(soup.select_one(".game_info_panel_widget tbody abbr")["title"])
+        except: pass
+
         url = fpclib.normalize(self.src)
         if url[-1] == "/": url = url[:-1]
 
@@ -63,18 +68,18 @@ class ItchIO(fpclib.Curation):
         # First check for html iframe
         placeholder = soup.select_one("div.iframe_placeholder")
         iframe = soup.select_one(".embed_wrapper > div > iframe")
-        if iframe:
-            self.platform = "HTML5"
-            self.app = fpclib.BASILISK
-            self.cmd = url
-            self.file = ""
-            self.embed = HTML_EMBED % (self.title, STYLE_IFRAME, str(iframe))
-        elif placeholder and "data-iframe" in placeholder.attrs:
+        if placeholder and "data-iframe" in placeholder.attrs:
             self.platform = "HTML5"
             self.app = fpclib.BASILISK
             self.cmd = url
             self.file = ""
             self.embed = HTML_EMBED % (self.title, STYLE_IFRAME, placeholder["data-iframe"])
+        elif iframe:
+            self.platform = "HTML5"
+            self.app = fpclib.BASILISK
+            self.cmd = url
+            self.file = ""
+            self.embed = HTML_EMBED % (self.title, STYLE_IFRAME, str(iframe))
         else:
             # No html frame, so check for other potential games
             selem = soup.select_one(".inner_column > script")
