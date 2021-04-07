@@ -1910,7 +1910,8 @@ class DeDuper(tk.Frame):
         
         if not folder:
             #if silent: pass
-            else: tkm.showerror(message="You must specify a folder containing curations to check through.")
+            #else: 
+            tkm.showerror(message="You must specify a folder containing curations to check through.")
             return
         
         print("[INFO] Deduping curations")

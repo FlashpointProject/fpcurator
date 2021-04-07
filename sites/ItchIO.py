@@ -51,8 +51,30 @@ class ItchIO(fpclib.Curation):
             try:
                 self.logo = soup.find("meta", property="og:image")["content"]
             except: pass
-        # Get developer
-        self.dev = soup.select_one(".on_follow > span").text[7:]
+
+        # Get devs
+        try:
+            authors = soup.find("td", text="Authors").parent
+            self.dev = [e.text for e in authors.find_all("a")]
+        except: pass
+        
+        # Get Genre/Tags
+        self.tags = []
+        try:
+            tags = soup.find("td", text="Genre").parent
+            self.tags = [e.text for e in tags.find_all("a")]
+        except: pass
+        try:
+            tags = soup.find("td", text="Tags").parent
+            self.tags += [e.text for e in tags.find_all("a")]
+        except: pass
+        
+        # Get languages
+        try:
+            lang = soup.find("td", text="Languages").parent
+            self.lang = [e["href"][-2:] for e in lang.find_all("a")]
+        except: pass
+            
         # Set publisher
         self.pub = "itch.io"
 
