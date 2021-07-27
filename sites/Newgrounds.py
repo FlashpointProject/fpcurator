@@ -20,7 +20,13 @@ HTML_FILES = re.compile('.*\.(js|html|css|json)$')
 # This is the class to use to curate with. It is also required!
 class Newgrounds(fpclib.Curation):
     def parse(self, osoup):
+        try:
+            self._parse(osoup)
+        except:
+            url = self.url if self.url[-1] != "/" else self.url[:-1]
+            self._parse(fpclib.get_soup(url + "/format/flash"))
         
+    def _parse(self, osoup):
         # Check for login-lock
         login = "requires a Newgrounds account to play" in osoup.select_one(".column").text
         if login:

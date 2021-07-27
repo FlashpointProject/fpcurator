@@ -93,7 +93,7 @@ class AddictingGames(fpclib.Curation):
     
     def soupify(self):
         # html5lib is required to parse description correctly.
-        return fpclib.get_soup(self.src, "html5lib")
+        return fpclib.get_soup(self.src, "html5lib") or fpclib.get_soup(self.src)
 
     def get_files(self):
         if self.platform == "HTML5":
