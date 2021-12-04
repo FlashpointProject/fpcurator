@@ -16,6 +16,7 @@ def toggle_console():
         else:
             windll.user32.ShowWindow(CONSOLE, 1)
             CONSOLE_OPEN = True
+
 toggle_console()
 
 import tkinter as tk
@@ -214,8 +215,8 @@ FIELDS = {
 # This uuid uniquely defines fpcurator. (there is a 0 on the end after the text)
 UUID = '51be8a01-3307-4103-8913-c2f70e64d83'
 
-TITLE = "fpcurator v1.5.1"
-ABOUT = "Created by Zach K - v1.5.1"
+TITLE = "fpcurator v1.5.2"
+ABOUT = "Created by Zach K - v1.5.2"
 VER = 5
 
 SITES_FOLDER = "sites"
