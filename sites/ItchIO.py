@@ -1,12 +1,13 @@
 # itch.io site definition (This is just the Unknown site definition but with a few extra kinks)
 
 import fpclib
-import re, json
+import re
+from html import unescape
 
 regex = "itch.io"
 # Only handles at most two sublevels.
-PLATFORM = re.compile('new I\.View(\w+)Game\(')
-VIEW_DATA = re.compile('{"url":(.*?{(.*?{.*?}|[^{}]*)*}|[^{}]*)*}')
+PLATFORM = re.compile(r'new I\.View(\w+)Game\(')
+VIEW_DATA = re.compile(r'{"url":(.*?{(.*?{.*?}|[^{}]*)*}|[^{}]*)*}')
 
 UNITY_EMBED = """<html>
     <head>
@@ -28,22 +29,22 @@ HTML_EMBED = """<html>
     <head>
         <title>%s</title>
         <style>
-            body { background-color: #000000; height: 100%%; margin: 0; }
+            body { background-color: #000000; height: 100%%; %s margin: 0;}
             %s
         </style>
     </head>
-    <body>
+    <body><center>
         %s
-    </body>
+    </center></body>
 </html>
 """
-STYLE_IFRAME = "iframe { width: 100%; height: 100%; }"
+STYLE_IFRAME = """iframe { %s; }"""
 IFRAME = """<iframe src="%s"></iframe>"""
 
 class ItchIO(fpclib.Curation):
     def parse(self, soup):
         # Get title
-        self.title = soup.find("h1").text
+        self.title = soup.find("h1", "game_title").text
         # Get logo
         try:
             self.logo = soup.select_one(".header.has_image > img")["src"]
@@ -68,6 +69,16 @@ class ItchIO(fpclib.Curation):
             tags = soup.find("td", text="Tags").parent
             self.tags += [e.text for e in tags.find_all("a")]
         except: pass
+        try:
+            tags = soup.find("td", text="Made with").parent
+            self.tags += [e.text for e in tags.find_all("a")]
+        except: pass
+        try:
+            tags = soup.find("li", "jam_entry").text[14:]
+            edition = re.search(r'\s+\W?\d*$', tags).group(0)
+            if edition != None: tags = tags.rstrip(edition)
+            self.tags += [tags]
+        except: pass
         
         # Get languages
         try:
@@ -83,6 +94,22 @@ class ItchIO(fpclib.Curation):
             self.date = fpclib.DP_UK.parse(soup.select_one(".game_info_panel_widget tbody abbr")["title"])
         except: pass
 
+        # Description
+        try:
+            desc = re.sub(r'<.*?>', '', repr(soup.select_one('.formatted_description')).replace('<br>', '\r\n')).replace('\r\n\r\n', '\r\n').strip('\r\n')
+            self.desc = None if desc == 'None' else unescape(desc.replace('\r\n\r\n', '\r\n'))
+            print(self.desc)
+        except: raise
+
+        # Style
+        style = ''
+        size = 'width: 100%; height: 100%'
+        if '"start_maximized":false' in str(soup):
+            try:
+                style = re.search(r'background-.*?(?=})', str(soup.find('style'))).group(0).replace('https', 'http')
+                size = str(soup.select_one('.game_frame')['style'])
+            except: pass
+        
         url = fpclib.normalize(self.src)
         if url[-1] == "/": url = url[:-1]
 
@@ -95,13 +122,13 @@ class ItchIO(fpclib.Curation):
             self.app = fpclib.BASILISK
             self.cmd = url
             self.file = ""
-            self.embed = HTML_EMBED % (self.title, STYLE_IFRAME, placeholder["data-iframe"])
+            self.embed = HTML_EMBED % (self.title, style, STYLE_IFRAME % size, placeholder["data-iframe"])
         elif iframe:
             self.platform = "HTML5"
             self.app = fpclib.BASILISK
             self.cmd = url
             self.file = ""
-            self.embed = HTML_EMBED % (self.title, STYLE_IFRAME, str(iframe))
+            self.embed = HTML_EMBED % (self.title, style, STYLE_IFRAME % size, str(iframe))
         else:
             # No html frame, so check for other potential games
             selem = soup.select_one(".inner_column > script")

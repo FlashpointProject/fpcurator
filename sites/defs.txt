@@ -9,3 +9,5 @@ Miniclip.py
 Newgrounds.py
 Unknown.py
 Y8.py
+Greenfoot.py
+DeviantArt.py
