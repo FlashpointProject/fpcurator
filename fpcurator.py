@@ -19,32 +19,36 @@ def toggle_console():
 
 toggle_console()
 
-import tkinter as tk
-import tkinter.ttk as ttk
-import tkinter.filedialog as tkfd
-import tkinter.messagebox as tkm
-import tkinterweb as tkw
+try:
+    import tkinter as tk
+    import tkinter.ttk as ttk
+    import tkinter.filedialog as tkfd
+    import tkinter.messagebox as tkm
+    import tkinterweb as tkw
 
-import fpclib
-import os, sys, time
-import re, json, bs4
+    import fpclib
+    import deviantart
+    import os, sys, time
+    import re, json, bs4
 
-import argparse
-import codecs
-import datetime
-import functools
-import pyperclip
-import googletrans
-import qfile
-import glob
-import importlib
-import sqlite3
-import threading
-import traceback
-import urllib
-import uuid
-import webbrowser
-import zipfile
+    import argparse
+    import codecs
+    import datetime
+    import functools
+    import pyperclip
+    import googletrans
+    import qfile
+    import glob
+    import importlib
+    import sqlite3
+    import threading
+    import traceback
+    import urllib
+    import uuid
+    import webbrowser
+    import zipfile
+finally:
+    toggle_console()
 
 import difflib
 try: import Levenshtein
@@ -554,7 +558,7 @@ class Help(tk.Toplevel):
         self.parent = parent
         
         # Create htmlframe for displaying help information
-        txt = tkw.HtmlFrame(self)
+        txt = tkw.HtmlFrame(self, messages_enabled=False)
         txt.load_html(HELP_HTML)
         txt.pack(expand=True, fill="both")
     
@@ -2239,6 +2243,7 @@ if __name__ == "__main__":
             MAINFRAME = Mainframe()
             MAINFRAME.mainloop()
         except Exception as e:
+            if not CONSOLE_OPEN: toggle_console()
             tkm.showerror(message=f"Fatal {e.__class__.__name__}: {str(e)}")
             traceback.print_exc()
     else:

@@ -3,6 +3,7 @@
 from html import unescape
 import fpclib
 import re, deviantart
+from os.path import exists
 
 regex = 'deviantart.com'
 
@@ -117,7 +118,10 @@ class DeviantArt(fpclib.Curation):
 
     def setup_api_from_file(self, dafilename):
         # Get Client's id and secret
-        client_data = fpclib.read(dafilename)
+        if exists(dafilename):
+            client_data = fpclib.read(dafilename)
+        else:
+            client_data = fpclib.read("./" + dafilename)
 
         try:
             client_id = re.search(r'DEVIANTART_ID=(.*?)(\r\n|$)', client_data).group(1)

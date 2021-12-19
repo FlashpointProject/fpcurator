@@ -19,7 +19,7 @@ The Auto Curator supports auto curating games from these websites:
 
 - [Addicting Games](https://www.addictinggames.com/) (Flash and HTML5)
 - [Coolmath Games](https://www.coolmathgames.com/) (HTML5)
-- [Deviant Art](https://www.deviantart.com/) (Flash)
+- [Deviant Art](https://www.deviantart.com/) (Flash) - \*
 - [FreeArcade](http://www.freearcade.com/) (Flash or Java)
 - [Greenfoot](https://www.greenfoot.org/collections/) (Java)
 - [itch.io](https://itch.io/) (Flash, Java, Unity, or HTML5)
@@ -30,16 +30,15 @@ The Auto Curator supports auto curating games from these websites:
 - [Y8](https://www.y8.com/) (Flash, Shockwave, Unity, or HTML5)
 - Unknown websites (Flash, Shockwave, Unity, or Java). HTML5 is **NOT** supported. This may not work on every website.
 
+\* - Deviant Art requires a clients.txt file to be present next to the script, executable, or bat file with the contents `DEVIANTART_ID={ID GOES HERE}` and `DEVIANTART_SECRET={SECRET GOES HERE}` on two lines with the `{THING GOES HERE}`s replaced with the respective content.
+
 To add support for other pages not supported by the tool, first start by creating a file named `<WebsiteName>.py` inside the `sites` folder next to the script/executable and putting this code inside it:
 
 ```python
 import fpclib
-# You can put other imports here, but the standalone only supports importing the following other libraries (Other imports require python to be installed on the host machine and the script to be run directly):
+# You can put other imports here, but the standalone only supports importing the following other libraries (Other imports besides the standard library require python to be installed on the host machine and the script to be run directly):
 
-# os, sys, time, re, json,
-# bs4, argparse, codecs, datetime, glob,
-# sqlite3, threading, traceback, webbrowser, zipfile,
-# urllib, difflib, googletrans, qfile, and Levenshtein.
+# bs4, qfile, googletrans, Levenshtein, and deviantart.
 
 
 # This is the regex that will be used to match the site url. It is required!
