@@ -1,15 +1,32 @@
 # Kongregate definition.
 
 import fpclib
-import bs4, re, urllib, uuid
+import bs4, re, urllib
 
 regex = 'kongregate.com'
 
 IF_URL = re.compile('[\'"]iframe_url[\'"]:[\'"](.*?)[\'"]')
 SWF_URL = re.compile('[\'"]swfurl[\'"]:[\'"](.*?)[\'"]')
 GAME_SWF = re.compile('[\'"]game_swf[\'"]:[\'"](.*?)[\'"]')
+EMBED_UNITY = re.compile(r'kongregateUnityDiv\\\",\s\\\"\/\/(.*?)\\",\s(\d*?),\s(\d*?),')
 UUID = re.compile('[0-9a-fA-F]{32}')
 SIZE = re.compile('[\'"]game_width[\'"]:(\d+),[\'"]game_height[\'"]:(\d+)')
+
+UNITY_EMBED = """<html>
+    <head>
+        <title>%s</title>
+        <style>
+            body { background-color: #000000; height: 100%%; margin: 0; }
+            #embed { position: absolute; top: 0; bottom: 0; left: 0; right: 0; margin: auto; }
+        </style>
+    </head>
+    <body>
+        <div style="width: %spx; height: %spx" id="embed">
+            <embed src="%s" bgColor=#000000  width=100%% height=100%% type="application/vnd.unity" disableexternalcall="true" disablecontextmenu="true" disablefullscreen="false" firstframecallback="unityObject.firstFrameCallback();">
+        </div>
+    </body>
+</html>
+"""
 
 HTML_EMBED = """<html>
     <head>
@@ -28,7 +45,6 @@ HTML_EMBED = """<html>
 
 class Kongregate(fpclib.Curation):
     def parse(self, soup):
-        k_uuid = str(uuid.uuid4())
         self.title = soup.find("h1", itemprop="name").text
 
         # Get Logo
@@ -68,20 +84,30 @@ class Kongregate(fpclib.Curation):
         scripts = fpclib.get_soup(if_url).select("body > script")
 
         if len(scripts) > 3:
-            # Effectively confirmed, this is a flash game
-            self.platform = "Flash"
-            self.app = fpclib.FLASH
+            # Effectively confirmed, this is a Flash or Unity game
             gdata = scripts[3].string
             # If game_swf is present, that takes priority
             cmd = GAME_SWF.search(gdata)
+            self.platform = "Flash"
+            self.app = fpclib.FLASH
             if cmd: cmd = fpclib.normalize(urllib.parse.unquote(cmd[1]))
             else:
-                # Otherwise check that there isn't a uuid in the swfurl (if there is, throw an error)
-                cmd = fpclib.normalize(SWF_URL.search(gdata)[1])
-                if UUID.search(cmd): raise ValueError("swfurl is not a valid game swf")
+                # Otherwise check that there isn't a uuid in the swfurl, or is Unity (if neither, throw an error)
+                try:
+                    unity_data = EMBED_UNITY.search(gdata)
+                    self.platform = "Unity"
+                    self.app = fpclib.UNITY
+                    self.if_url = fpclib.normalize(urllib.parse.unquote(unity_data[1]))
+                    self.if_file = self.if_url
+                    cmd = fpclib.normalize(self.src)
+                    self.size = ["", unity_data[2], unity_data[3]]
+                except:
+                    # Otherwise check that there isn't a uuid in the swfurl
+                    cmd = fpclib.normalize(SWF_URL.search(gdata)[1])
+                    if UUID.search(cmd): raise ValueError("swfurl is not a valid game swf")
             self.cmd = cmd
         else:
-            # It's not a flash game, so we will embed the html ourselves later
+            # It's not a Flash game, so we will embed the html ourselves later
             self.platform = "HTML5"
             self.app = fpclib.BASILISK
             self.cmd = fpclib.normalize(self.src)
@@ -90,7 +116,7 @@ class Kongregate(fpclib.Curation):
             self.size = SIZE.search(if_script)
     
     def get_files(self):
-        if self.platform == "HTML5":
+        if self.platform == "HTML5" or self.platform == "Unity":
             # Download iframe that ought to be embedded
             fpclib.download_all((self.if_url,))
             # Replace all references to https with http
@@ -98,7 +124,8 @@ class Kongregate(fpclib.Curation):
             # Create file to embed swf
             f = self.cmd[7:]
             if f[-1] == "/": f += "index.html" 
-            fpclib.write(f, HTML_EMBED % (self.title, self.size[1], self.size[2], self.if_file))
+            if self.platform == "HTML5": fpclib.write(f, HTML_EMBED % (self.title, self.size[1], self.size[2], self.if_file))
+            else: fpclib.write(f, UNITY_EMBED % (self.title, self.size[1], self.size[2], self.if_file))
         else:
             # Flash games are downloaded normally
             super().get_files()
