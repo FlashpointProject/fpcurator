@@ -40,7 +40,6 @@ import fpclib
 
 # bs4, qfile, googletrans, Levenshtein, and deviantart.
 
-
 # This is the regex that will be used to match the site url. It is required!
 regex = 'website.com'
 
