@@ -58,6 +58,10 @@ class ItchIO(fpclib.Curation):
             authors = soup.find("td", text="Authors").parent
             self.dev = [e.text for e in authors.find_all("a")]
         except: pass
+        try:
+            author = soup.find("td", text="Author").parent
+            self.dev = [e.text for e in author.find_all("a")]
+        except: pass
         
         # Get Genre/Tags
         self.tags = []
@@ -90,8 +94,10 @@ class ItchIO(fpclib.Curation):
         self.pub = "itch.io"
 
         # Release date
+        # Currently won't get the date as it only shows up by being logged
         try:
-            self.date = fpclib.DP_UK.parse(soup.select_one(".game_info_panel_widget tbody abbr")["title"])
+            info_table = soup.select_one(".game_info_panel_widget tbody")
+            self.date = fpclib.DP_UK.parse(re.search(r'Published<\/td><td><abbr title="(.+?)"', str(info_table)).group(1))
         except: pass
 
         # Description
