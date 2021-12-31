@@ -102,7 +102,7 @@ class ItchIO(fpclib.Curation):
 
         # Description
         try:
-            desc = re.sub(r'<.*?>', '', repr(soup.select_one('.formatted_description')).replace('<br>', '\r\n')).replace('\r\n\r\n', '\r\n').strip('\r\n')
+            desc = re.sub(r'<.*?>', '', repr(soup.select_one('.formatted_description')).replace('</li><li>', '\r\n').replace('<br>', '\r\n')).replace('\r\n\r\n', '\r\n').strip('\r\n')
             self.desc = None if desc == 'None' else unescape(desc.replace('\r\n\r\n', '\r\n'))
             print(self.desc)
         except: raise
