@@ -1,7 +1,7 @@
 # Kongregate definition.
 
 import fpclib
-import bs4, re, urllib
+import bs4, re, urllib, uuid
 
 regex = 'kongregate.com'
 
@@ -45,6 +45,7 @@ HTML_EMBED = """<html>
 
 class Kongregate(fpclib.Curation):
     def parse(self, soup):
+        k_uuid = str(uuid.uuid4())
         self.title = soup.find("h1", itemprop="name").text
 
         # Get Logo
