@@ -83,7 +83,7 @@ class DeviantArt(fpclib.Curation):
 
         # Get Logo
         try: self.logo = soup.find("link", {"as":"image"})["href"]
-        except: raise
+        except: pass
 
         # Get Developer and set Publisher
         self.dev = str(metadata['author'])
