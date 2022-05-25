@@ -96,16 +96,17 @@ class Kongregate(fpclib.Curation):
                 # Otherwise check that there isn't a uuid in the swfurl, or is Unity (if neither, throw an error)
                 try:
                     unity_data = EMBED_UNITY.search(gdata)
-                    self.platform = "Unity"
-                    self.app = fpclib.UNITY
                     self.if_url = fpclib.normalize(urllib.parse.unquote(unity_data[1]))
                     self.if_file = self.if_url
                     cmd = fpclib.normalize(self.src)
                     self.size = ["", unity_data[2], unity_data[3]]
+                    self.platform = "Unity"
+                    self.app = fpclib.UNITY
                 except:
                     # Otherwise check that there isn't a uuid in the swfurl
                     cmd = fpclib.normalize(SWF_URL.search(gdata)[1])
                     if UUID.search(cmd): raise ValueError("swfurl is not a valid game swf")
+                    self.platform = "Flash"
             self.cmd = cmd
         else:
             # It's not a Flash game, so we will embed the html ourselves later
