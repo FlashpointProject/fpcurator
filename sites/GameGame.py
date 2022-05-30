@@ -22,7 +22,9 @@ class GameGame(fpclib.Curation):
         e = soup.select_one("#gamecontainer > noindex")
         if e:
             self.platform = "HTML5"
+            self.app = fpclib.BASILISK
             self.cmd = fpclib.normalize(e.iframe["src"])
         else:
             self.platform = "Flash"
+            self.app = fpclib.FLASH
             self.cmd = fpclib.normalize(SWF.search(soup.select_one("section > script").string)[1])
