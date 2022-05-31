@@ -26,7 +26,7 @@ The Auto Curator supports auto curating games from these websites:
 - [itch.io](https://itch.io/) (Flash, Java, Unity, or HTML5)
 - [Jay is games](https://jayisgames.com/) (Flash, Shockwave, Unity, or HTML5)
 - [Kongregate](https://www.kongregate.com/) (Flash and HTML5)
-- [Mathématiques Magiques](http://therese.eveilleau.pagesperso-orange.fr)
+- [Mathématiques Magiques](http://therese.eveilleau.pagesperso-orange.fr) (Flash)
 - [Miniclip](https://www.miniclip.com/) (HTML5)
 - [Newgrounds](https://www.newgrounds.com/) (Flash, Unity, or HTML5)
 - [Y8](https://www.y8.com/) (Flash, Shockwave, Unity, or HTML5)
