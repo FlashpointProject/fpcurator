@@ -13,3 +13,4 @@ Newgrounds.py
 Miniclip.py
 Greenfoot.py
 Therese.py
+GameJolt.py
