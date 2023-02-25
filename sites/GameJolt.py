@@ -36,7 +36,7 @@ class GameJolt(fpclib.Curation):
                 
                 # Title
                 self.title = req_download['payload']['game']['title']
-                
+
                 # Platform
                 self.platform = i['type'].capitalize()
                 if self.platform == "Flash":
