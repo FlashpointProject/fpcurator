@@ -34,6 +34,9 @@ class GameJolt(fpclib.Curation):
         for i in req_overview['payload']['builds']:
             if i['type'] != 'downloadable' and i['type'] != 'html':
                 
+                # Title
+                self.title = req_download['payload']['game']['title']
+                
                 # Platform
                 self.platform = i['type'].capitalize()
                 if self.platform == "Flash":
@@ -57,9 +60,6 @@ class GameJolt(fpclib.Curation):
 
                 # Publisher
                 self.pub = 'Game Jolt'
-
-                # Title
-                self.title = req_download['payload']['game']['title']
 
                 # Developer
                 self.dev = req_download['payload']['game']['developer']['name']
