@@ -1,7 +1,7 @@
 # Game Jolt definition.
 
 import fpclib
-import re
+import re, json
 from requests import session
 from datetime import datetime
 
@@ -34,6 +34,11 @@ class GameJolt(fpclib.Curation):
         for i in req_overview['payload']['builds']:
             if i['type'] != 'downloadable' and i['type'] != 'html':
                 
+                id_ = i['id']
+                req_token = sess.post('https://gamejolt.com/site-api/web/discover/games/builds/get-download-url/{}'.format(id_), data='{}').json()
+                token, = re.findall(r'token=([^&]+)', req_token['payload']['url'])
+                req_download = sess.get('https://gamejolt.net/site-api/gameserver/{}'.format(token)).json()
+                
                 # Title
                 self.title = req_download['payload']['game']['title']
 
@@ -53,25 +58,26 @@ class GameJolt(fpclib.Curation):
                     self.embed = UNITY_EMBED % (self.title, i['embed_width'], i['embed_height'], i['primary_file']['filename'])
                     self.if_filename = 'index.html'
 
-                id_ = i['id']
-                req_token = sess.post('https://gamejolt.com/site-api/web/discover/games/builds/get-download-url/{}'.format(id_), data='{}').json()
-                token, = re.findall(r'token=([^&]+)', req_token['payload']['url'])
-                req_download = sess.get('https://gamejolt.net/site-api/gameserver/{}'.format(token)).json()
-
                 # Publisher
                 self.pub = 'Game Jolt'
 
                 # Developer
                 self.dev = req_download['payload']['game']['developer']['name']
 
-                # Get Desc
-                # Todo replace with the clunky gamejolt json
-                # self.desc = req_overview['payload']['metaDescription']
-
+                # Get Desc and Tags
+                self.tags = []
+                req_overview2 = sess.get('https://gamejolt.com/site-api/web/discover/games/{}'.format(self.gameId)).json()
+                desc = json.loads(req_overview2['payload']['game']['description_content'])['content']
+                for paragraph in desc:
+                    for pcontent in paragraph['content']:
+                        if 'text' in pcontent:
+                            if 'marks' in pcontent: self.tags += [pcontent['text'][1:]]
+                            else: self.desc = '\r\n'.join(((self.desc if self.desc else ""), pcontent['text']))
+                self.desc = self.desc.strip('\r\n')
+                
                 # Get Date
                 pub_date = i['added_on']
                 self.date = datetime.utcfromtimestamp(pub_date/1000).strftime('%Y-%m-%d')
-                print(self.date)
 
                 # Get Logo
                 self.logo = req_download['payload']['game']['img_thumbnail']
@@ -80,7 +86,6 @@ class GameJolt(fpclib.Curation):
                 req_url = sess.get('https://gamejolt.net/site-api/gameserver/{}'.format(token)).json()
                 #print(req_url)
                 self.file = req_url['payload']['url']
-                print(self.file)
                 self.cmd = 'http://cdn-files.gamejolt.net/data/games/{}/{}'.format(self.gameId, self.if_filename)
 
     def get_files(self):
