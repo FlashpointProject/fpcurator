@@ -21,16 +21,17 @@ The Auto Curator supports auto curating games from these websites:
 - [Coolmath Games](https://www.coolmathgames.com/) (HTML5)
 - [Deviant Art](https://www.deviantart.com/) (Flash) - \*
 - [FreeArcade](http://www.freearcade.com/) (Flash or Java)
+- [Game Jolt](https://gamejolt.com/) (Flash or Unity)
 - [GameGame](https://game-game.com/) (Flash or HTML5)
 - [Greenfoot](https://www.greenfoot.org/collections/) (Java)
 - [itch.io](https://itch.io/) (Flash, Java, Unity, or HTML5)
-- [Jay is games](https://jayisgames.com/) (Flash, Shockwave, Unity, or HTML5)
-- [Kongregate](https://www.kongregate.com/) (Flash and HTML5)
+- [Jay is games](https://jayisgames.com/) (Flash, Shockwave, Unity or HTML5)
+- [Kongregate](https://www.kongregate.com/) (Flash, Unity or HTML5)
 - [Mathématiques Magiques](http://therese.eveilleau.pagesperso-orange.fr) (Flash)
 - [Miniclip](https://www.miniclip.com/) (HTML5)
-- [Newgrounds](https://www.newgrounds.com/) (Flash, Unity, or HTML5)
-- [Y8](https://www.y8.com/) (Flash, Shockwave, Unity, or HTML5)
-- Unknown websites (Flash, Shockwave, Unity, or Java). HTML5 is **NOT** supported. This may not work on every website.
+- [Newgrounds](https://www.newgrounds.com/) (Flash, Unity or HTML5)
+- [Y8](https://www.y8.com/) (Flash, Shockwave, Unity or HTML5)
+- Unknown websites (Flash, Shockwave, Unity or Java). HTML5 is **NOT** supported. This may not work on every website.
 
 \* - Deviant Art requires a clients.txt file to be present next to the script, executable, or bat file with the contents `DEVIANTART_ID={ID GOES HERE}` and `DEVIANTART_SECRET={SECRET GOES HERE}` on two lines with the `{THING GOES HERE}`s replaced with the respective content.
 
