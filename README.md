@@ -25,13 +25,13 @@ The Auto Curator supports auto curating games from these websites:
 - [GameGame](https://game-game.com/) (Flash or HTML5)
 - [Greenfoot](https://www.greenfoot.org/collections/) (Java)
 - [itch.io](https://itch.io/) (Flash, Java, Unity, or HTML5)
-- [Jay is games](https://jayisgames.com/) (Flash, Shockwave, Unity or HTML5)
-- [Kongregate](https://www.kongregate.com/) (Flash, Unity or HTML5)
+- [Jay is games](https://jayisgames.com/) (Flash, Shockwave, Unity, or HTML5)
+- [Kongregate](https://www.kongregate.com/) (Flash, Unity, or HTML5)
 - [Mathématiques Magiques](http://therese.eveilleau.pagesperso-orange.fr) (Flash)
 - [Miniclip](https://www.miniclip.com/) (HTML5)
-- [Newgrounds](https://www.newgrounds.com/) (Flash, Unity or HTML5)
-- [Y8](https://www.y8.com/) (Flash, Shockwave, Unity or HTML5)
-- Unknown websites (Flash, Shockwave, Unity or Java). HTML5 is **NOT** supported. This may not work on every website.
+- [Newgrounds](https://www.newgrounds.com/) (Flash, Unity, or HTML5)
+- [Y8](https://www.y8.com/) (Flash, Shockwave, Unity, or HTML5)
+- Unknown websites (Flash, Shockwave, Unity, or Java). HTML5 is **NOT** supported. This may not work on every website.
 
 \* - Deviant Art requires a clients.txt file to be present next to the script, executable, or bat file with the contents `DEVIANTART_ID={ID GOES HERE}` and `DEVIANTART_SECRET={SECRET GOES HERE}` on two lines with the `{THING GOES HERE}`s replaced with the respective content.
 
@@ -61,7 +61,7 @@ class WebsiteName(fpclib.Curation):
     # save_image(self, url, file_name) - called both to save the logo and screenshot of the curation based on self.logo and self.ss (only if they are set). This by default does NO error checking, so if you want error checking you'll have to overwrite this function.
 ```
 
-It is recommended that if you add a site definition you create a pull request to this repo so everyone can use it.
+It is recommended that if you add a site definition you create a pull request to this repo so everyone can use it. When pull requesting an update, make sure you also update `defs.txt` to include your definition and update the timestamp at the top of the file using python's built in `time.time()`.
 
 For information on how to use beautifulsoup, check out the [official documentation](https://www.crummy.com/software/BeautifulSoup/bs4/doc/).
 
