@@ -18,6 +18,7 @@ If you are looking for command line usage, run `fpcurator --help` or `fpcurator.
 The Auto Curator supports auto curating games from these websites:
 
 - [Addicting Games](https://www.addictinggames.com/) (Flash and HTML5)
+- [Construct](https://www.construct.net/) (HTML5)
 - [Coolmath Games](https://www.coolmathgames.com/) (HTML5)
 - [Deviant Art](https://www.deviantart.com/) (Flash) - \*
 - [FreeArcade](http://www.freearcade.com/) (Flash or Java)

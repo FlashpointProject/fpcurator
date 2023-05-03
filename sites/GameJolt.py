@@ -69,11 +69,15 @@ class GameJolt(fpclib.Curation):
                 req_overview2 = sess.get('https://gamejolt.com/site-api/web/discover/games/{}'.format(self.gameId)).json()
                 desc = json.loads(req_overview2['payload']['game']['description_content'])['content']
                 for paragraph in desc:
-                    for pcontent in paragraph['content']:
-                        if 'text' in pcontent:
-                            if 'marks' in pcontent: self.tags += [pcontent['text'][1:]]
-                            else: self.desc = '\r\n'.join(((self.desc if self.desc else ""), pcontent['text']))
-                self.desc = self.desc.strip('\r\n')
+                    if 'content' in paragraph:
+                        for pcontent in paragraph['content']:
+                            if 'text' in pcontent:
+                                if ('marks' in pcontent and pcontent['marks'][0]['type'] == 'tag') : self.tags += [pcontent['text'][1:]]
+                                else: self.desc = '\r\n'.join(((self.desc if self.desc else ""), pcontent['text']))
+                            elif 'content' in pcontent:
+                                for pparagraph in pcontent['content']:
+                                    self.desc = '\r\n'.join(((self.desc if self.desc else ""), (pparagraph['text'] if ('text' in pparagraph) else pparagraph['content'][0]['text'])))
+                self.desc = self.desc.replace(' \r\n', ' ').replace('\r\n ', ' ').strip('\r\n')
                 
                 # Get Date
                 pub_date = i['added_on']
