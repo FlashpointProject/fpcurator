@@ -1,3 +1,5 @@
+# Game-Game definition.
+
 import fpclib
 import re
 
