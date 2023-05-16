@@ -22,6 +22,7 @@ The Auto Curator supports auto curating games from these websites:
 - [Coolmath Games](https://www.coolmathgames.com/) (HTML5)
 - [Deviant Art](https://www.deviantart.com/) (Flash) - \*
 - [FreeArcade](http://www.freearcade.com/) (Flash or Java)
+- [Fur Affinity](https://www.furaffinity.net/) (SFW Flash)
 - [Game Jolt](https://gamejolt.com/) (Flash or Unity)
 - [GameGame](https://game-game.com/) (Flash or HTML5)
 - [Greenfoot](https://www.greenfoot.org/collections/) (Java)
