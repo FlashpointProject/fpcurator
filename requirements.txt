@@ -1,0 +1,6 @@
+deviantart
+bs4
+pyperclip
+googletrans
+qfile
+python-Levenshtein

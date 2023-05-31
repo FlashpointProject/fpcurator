@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 # Best way of hiding the console window
 # This should be imported first to get the right console window and hide it early
 try:
@@ -279,6 +281,8 @@ class Mainframe(tk.Tk):
         super().__init__()
         self.minsize(695, 650)
         self.title(TITLE)
+        
+        self.iconphoto(False, tk.PhotoImage("icon.png"))
         self.protocol("WM_DELETE_WINDOW", self.exit_window)
         
         # Cross-window variables
@@ -676,8 +680,11 @@ class AutoCurator(tk.Frame):
                 odata = fpclib.read(SITES_FOLDER+"/defs.txt")
             except: pass
 
-            if data != odata and tkm.askyesno(message="The Auto Curator's site definitions are out of date, would you like to redownload them from online? (you won't be able to use the Auto Curator fully without them)"):
-                AutoCurator.download_defs(data, silent)
+            try:
+                if data != odata and tkm.askyesno(message="The Auto Curator's site definitions are out of date, would you like to redownload them from online? (you won't be able to use the Auto Curator fully without them)"):
+                    AutoCurator.download_defs(data, silent)
+            except Exception:
+                pass
 
         defs = []
         priorities = {}
