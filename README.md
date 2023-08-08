@@ -1,4 +1,6 @@
 # fpcurator
+<img src="icon.svg" height="100">
+
 fpcurator is a Python and fpclib powered tool for downloading urls, auto-generating curations, bulk searching for already curated games, and listing tags/platforms/games/animations for Flashpoint.
 
 If you don't want to install python to use fpcurator, check the releases page for a release. Extract the fpcurator.zip file and run the `fpcurator.bat` file.
