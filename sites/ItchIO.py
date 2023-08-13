@@ -87,7 +87,7 @@ class ItchIO(fpclib.Curation):
         # Get languages
         try:
             lang = soup.find("td", text="Languages").parent
-            self.lang = [e["href"][-2:] for e in lang.find_all("a")]
+            self.lang = [e["href"][-2:].lower() for e in lang.find_all("a")]
         except: pass
             
         # Set publisher
