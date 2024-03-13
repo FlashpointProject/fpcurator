@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "fpcurator"
+version = "0.1.0"
+description = "fpcurator is a Python and fpclib powered tool for downloading urls, auto-generating curations, bulk searching for already curated games, and listing tags/platforms/games/animations for Flashpoint."
+authors = ["mathgeniuszach <huntingmanzach@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+deviantart = "^0.1.5"
+beautifulsoup4 = "^4.12.3"
+tkinterweb = "^3.23.5"
+pyperclip = "^1.8.2"
+googletrans = "^3.0.0"
+qfile = "^1.1.0.7"
+python-levenshtein = "^0.25.0"
+ruamel-yaml = "0.16.13" # fpclib depends on this version of ruamel-yaml
+fpclib = "^1.6.6.2"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

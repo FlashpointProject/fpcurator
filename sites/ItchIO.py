@@ -9,6 +9,15 @@ regex = "itch.io"
 PLATFORM = re.compile(r'new I\.View(\w+)Game\(')
 VIEW_DATA = re.compile(r'{"url":(.*?{(.*?{.*?}|[^{}]*)*}|[^{}]*)*}')
 
+DESCRIPTION_CHANGES = [
+    (re.compile(r'</tr>|<br>'), '\r\n'),
+    (re.compile(r'</td><td>'), ' '),
+    (re.compile(r'</p>'), '\r\n\r\n'),
+    (re.compile(r'<li>'), '\r\n•'),
+    (re.compile(r'<.*?>'), ''),
+    (re.compile(r'(\r\n){3,}'), '\r\n\r\n'),
+]
+
 UNITY_EMBED = """<html>
     <head>
         <title>%s</title>
@@ -102,9 +111,11 @@ class ItchIO(fpclib.Curation):
 
         # Description
         try:
-            desc = re.sub(r'<.*?>', '', repr(soup.select_one('.formatted_description')).replace('<li>', '\r\n•').replace('</tr>', '\r\n').replace('</td><td>', ' ').replace('<br>', '\r\n')).replace('\r\n\r\n', '\r\n').strip('\r\n')
-            self.desc = None if desc == 'None' else unescape(desc.replace('\r\n\r\n', '\r\n'))
-            print(self.desc)
+            desc = repr(soup.select_one('.formatted_description'))
+            for regex, repl in DESCRIPTION_CHANGES:
+                desc = regex.sub(repl, desc)
+            self.desc = None if desc == 'None' else unescape(desc.strip())
+            #print(self.desc)
         except: raise
 
         # Style

@@ -15,6 +15,8 @@ When the program launches up, you may be prompted to download the latest site de
 
 If you are looking for command line usage, run `fpcurator --help` or `fpcurator.py --help` in the terminal of your choice.
 
+You can launch the script using `poetry run python fpcurator.py`.
+
 ## Auto Curator Website Support
 
 The Auto Curator supports auto curating games from these websites:

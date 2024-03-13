@@ -12,6 +12,7 @@ build
 .venv.bat
 _*
 dist
+poetry.lock
 
 # Don't include python venv data
 Include
