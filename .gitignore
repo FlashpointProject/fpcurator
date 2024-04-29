@@ -1,5 +1,4 @@
 # Don't include compiled python stuff
-__pycache__
 *.pyc
 
 # Don't include IDE stuff
