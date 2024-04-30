@@ -33,12 +33,13 @@ def update_defs():
 def build():
     clean()
     os.system(f'pyinstaller fpcurator.py --onedir' + #' --upx-dir=upx' +
-              f' --add-data="icon.png{os.pathsep}icon.png"' +
+              f' --add-data="icon.png{os.pathsep}."' +
               f' --add-data="{tkinter.__path__[0]}{os.pathsep}tkinter"' +
               f' --add-data="{tkinterweb.__path__[0]}{os.pathsep}tkinterweb"' +
               f' --add-data="{PIL.__path__[0]}{os.pathsep}PIL"')
 
 def clean():
     rmpycache()
+    rm(PROJECT_DIR / "fpcurator.spec")
     rm(PROJECT_DIR / "build")
     rm(PROJECT_DIR / "dist")

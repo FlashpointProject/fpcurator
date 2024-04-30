@@ -39,6 +39,7 @@ try:
     import datetime
     import functools
     import pyperclip
+    import pathlib
     import googletrans
     import qfile
     import glob
@@ -222,8 +223,8 @@ FIELDS = {
 # This uuid uniquely defines fpcurator. (there is a 0 on the end after the text)
 UUID = '51be8a01-3307-4103-8913-c2f70e64d83'
 
-TITLE = "fpcurator v1.6.1"
-ABOUT = "Created by Zach K - v1.6.1"
+TITLE = "fpcurator v1.6.2"
+ABOUT = "Created by Zach K - v1.6.2"
 VER = 6
 
 SITES_FOLDER = "sites"
@@ -283,7 +284,16 @@ class Mainframe(tk.Tk):
         self.minsize(695, 650)
         self.title(TITLE)
 
-        self.iconphoto(True, tk.PhotoImage(file="icon.png"))
+        try:
+            filepath = pathlib.Path(__file__)
+            icons = [*filepath.parent.glob("**/icon.png")]
+            if len(icons) > 0:
+                self.iconphoto(True, tk.PhotoImage(file=icons[0]))
+            else:
+                self.iconphoto(True, tk.PhotoImage(file="icon.png"))
+        except Exception as e:
+            fpclib.debug('Could not find fpcurator icon', 1, pre='[ERR]  ')
+
         self.protocol("WM_DELETE_WINDOW", self.exit_window)
 
         # Cross-window variables
