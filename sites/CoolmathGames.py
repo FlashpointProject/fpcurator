@@ -5,6 +5,7 @@ import fpclib
 import json, bs4, re, zipfile
 
 regex = 'coolmath-?games.com'
+ver = 6
 
 HTML_FILES = re.compile(r'.*\.(js|html|css|json)$')
 

@@ -6,6 +6,7 @@ import re, deviantart
 from os.path import exists
 
 regex = 'deviantart.com'
+ver = 6
 
 # Monkey patching because library is missing filename in a def, and mature_content on another
 def download_deviation_with_filename(self, deviationid):
@@ -69,7 +70,7 @@ DESC_REPLACEMENTS = [
 class DeviantArt(fpclib.Curation):
     def parse(self, soup):
         DA_CLIENT = self.setup_api_from_file('clients.txt')
-        
+
         uuid = soup.find("meta", property="da:appurl")["content"][23:]
         swfurl = DA_CLIENT.download_deviation(uuid)
         try: swfurl = DA_CLIENT.download_deviation(uuid)
@@ -88,7 +89,7 @@ class DeviantArt(fpclib.Curation):
         # Get Developer and set Publisher
         self.dev = str(metadata['author'])
         self.pub = "DeviantArt"
-        
+
         # Get Release Date
         self.date = soup.find("time")['datetime'][:10]
 
@@ -109,7 +110,7 @@ class DeviantArt(fpclib.Curation):
     def get_files(self):
         # We will not use the generated link as the launch command, too long
         fpclib.download(self.if_url, loc='api-da.wixmp.com/_api/download/', name=self.if_filename)
-    
+
     def save_image(self, url, file_name):
         # Surround save image with a try catch loop as some logos cannot be gotten.
         try:
@@ -127,7 +128,7 @@ class DeviantArt(fpclib.Curation):
             client_id = re.search(r'DEVIANTART_ID=(.*?)(\r\n|$)', client_data).group(1)
             client_secret = re.search(r'DEVIANTART_SECRET=(.*?)(\r\n|$)', client_data).group(1)
         except: raise ValueError(dafilename +' is missing one more parameters (ID=[client_id]\\nSECRET=[client_secret]).')
-        
+
         # Connect to DeviantArt
         try: da = deviantart.Api(client_id, client_secret)
         except: raise ValueError('Could not setup DeviantArt API.')

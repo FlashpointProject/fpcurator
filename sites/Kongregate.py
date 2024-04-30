@@ -4,6 +4,7 @@ import fpclib
 import bs4, re, urllib, uuid
 
 regex = 'kongregate.com'
+ver = 6
 
 IF_URL = re.compile(r'[\'"]iframe_url[\'"]:[\'"](.*?)[\'"]')
 SWF_URL = re.compile(r'swf_location\s?=\s?[\'\"]\/?\/?(.+?)(\?.+?)?[\'\"]')

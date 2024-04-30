@@ -4,6 +4,7 @@ import fpclib
 import re
 
 regex = 'y8.com'
+ver = 6
 
 TITLE = re.compile("(.*?) Game - Play online at Y8.com")
 
@@ -16,14 +17,14 @@ class Y8(fpclib.Curation):
             self.title = TITLE.search(soup.select_one("title").text.strip())[1]
         self.logo = soup.find("meta", property="og:image")["content"]
         self.pub = "Y8"
-        
+
         # Get info and description
         info = soup.select(".game-description > div > div > div")
         self.desc = info[0].text.strip()
         # Get date
         date = info[1].select_one(".data").text.strip().split(" ")
         self.date = date[2] + "-" + fpclib.MONTHS[date[1]] + "-" + date[0]
-        
+
         # Acquire tags; I decided to do the lazy thing instead of testing them individually
         self.tags = [i.text for i in soup.select(".tags-list > a > p")]
 
@@ -66,15 +67,15 @@ class Y8(fpclib.Curation):
             if not iframe: raise ValueError("Could not find game iframe")
 
             if "src" in iframe.attrs:
-                cmd = iframe["src"] 
+                cmd = iframe["src"]
             else:
                 cmd = iframe["data-src"]
-            
+
             if "//" in cmd: cmd = fpclib.normalize(cmd, keep_vars=True)
             elif cmd[0] == "/": cmd = "http://jayisgames.com" + cmd
             else: cmd = url + cmd
             self.cmd = cmd
-    
+
     def get_files(self):
         if self.platform == "Unity":
             # Unity has an embed file created for it
@@ -89,11 +90,11 @@ class Y8(fpclib.Curation):
         else:
             # All other platforms are very simple
             super().get_files()
-        
+
             if self.platform == "HTML5":
                 # If HTML5, replace all instances of https: with http:
                 fpclib.replace(self.cmd[7:], "https:", "http:")
-    
+
     def save_image(self, url, file_name):
         # Surround save image with a try catch loop as some logos cannot be gotten.
         try:

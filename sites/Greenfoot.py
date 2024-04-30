@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 import requests
 
 regex = 'greenfoot.org'
+ver = 6
 
 APPLET_EMBED = """<html>
     <head>
@@ -31,7 +32,7 @@ class Greenfoot(fpclib.Curation):
         # Get Developer and set Publisher
         self.dev = soup.select_one(".avatar_heading > a").text
         self.pub = "Greenfoot"
-        
+
         # Get Release Date
         date = soup.find("div", "avatar_bar").find("p").text
         if date.find("second") != -1: date = (datetime.today() - timedelta(seconds=re.search(r'^\d*?(?=\s)', date).group(0))).strftime('%Y-%m-%d')
@@ -60,7 +61,7 @@ class Greenfoot(fpclib.Curation):
             html_soup = soup
             soup = BeautifulSoup(requests.get(self.cmd_html + "?js=false").content, 'html.parser')
         else: html_soup = BeautifulSoup(requests.get(self.cmd_html).content, 'html.parser')
-            
+
         # Get jar url and embed
         #print(str(soup))
         self.java_applet = str(soup.find("applet"))
@@ -89,7 +90,7 @@ class Greenfoot(fpclib.Curation):
         if self.html_embed:
             fpclib.download_all((self.js_one, self.js_two,))
             fpclib.write(self.cmd_html[7:], self.html_embed)
-    
+
     def save_image(self, url, file_name):
         # Surround save image with a try catch loop as some logos cannot be gotten.
         try:

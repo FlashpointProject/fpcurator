@@ -4,6 +4,7 @@ import fpclib
 import re
 
 regex = 'furaffinity.net'
+ver = 6
 
 class FurAffinity(fpclib.Curation):
     def parse(self, soup):
@@ -13,17 +14,17 @@ class FurAffinity(fpclib.Curation):
 
         # Get title
         self.title = soup.select_one(".submission-title").text
-        
+
         # Get dev and publisher
         self.dev = soup.select_one(".submission-id-sub-container").find("strong").text
         self.publisher = 'Fur Affinity'
-        
+
         # Get desc
         self.desc = soup.select_one(".submission-description").text.strip()
-        
+
         # Get date
         self.date = fpclib.DP_US.parse(soup.select_one(".submission-id-sub-container").find(class_='popup_date')['title'])
-        
+
         # Get platform
         self.platform = 'Flash'
         self.app = fpclib.FLASH

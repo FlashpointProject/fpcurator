@@ -224,7 +224,7 @@ UUID = '51be8a01-3307-4103-8913-c2f70e64d83'
 
 TITLE = "fpcurator v1.6.1"
 ABOUT = "Created by Zach K - v1.6.1"
-VER = 5
+VER = 6
 
 SITES_FOLDER = "sites"
 

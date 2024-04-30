@@ -4,6 +4,7 @@ import fpclib
 import re, json
 
 regex = 'miniclip.com'
+ver = 6
 
 HTML_EMBED = """<body>
     <iframe width="100%%" height="100%%" src="%s"></iframe>
@@ -39,7 +40,7 @@ class Miniclip(fpclib.Curation):
         self.if_url = fpclib.normalize(url)
 
         self.cmd = fpclib.normalize(self.src)
-    
+
     def get_files(self):
         # Download iframe that ought to be embedded
         fpclib.download_all((self.if_url,))
@@ -47,9 +48,9 @@ class Miniclip(fpclib.Curation):
         fpclib.replace(self.if_url[7:], "https:", "http:")
         # Create file to embed swf
         f = self.cmd[7:]
-        if f[-1] == "/": f += "index.html" 
+        if f[-1] == "/": f += "index.html"
         fpclib.write(f, HTML_EMBED % self.if_url)
-    
+
     def save_image(self, url, file_name):
         # Surround save image with a try catch loop as some logos cannot be gotten.
         try:

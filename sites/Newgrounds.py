@@ -5,6 +5,8 @@ import codecs, json, re, bs4
 
 # This is the regex that will be used to match this site. It is required!
 regex = 'newgrounds.com'
+# This is the minimum minor version of fpcurator required to run this definition.
+ver = 6
 
 # Priority that the site has when matching regexes. Higher priorities will be checked first. If left out, it is assumed to be 0.
 priority = 0

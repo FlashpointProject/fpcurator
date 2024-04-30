@@ -3,6 +3,7 @@ import fpclib
 import re
 
 regex = 'freearcade.com'
+ver = 6
 
 SWF = re.compile(r"SWFObject\('(.*?)'")
 APPLET = re.compile(r"AppletObject\('(.*?)', '(.*?)', '(.*?)', '(.*?)'")

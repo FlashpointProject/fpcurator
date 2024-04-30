@@ -5,6 +5,8 @@ import urllib
 import re
 
 regex = "."
+ver = 6
+
 priority = -10000
 
 class Unknown(fpclib.Curation):
@@ -29,7 +31,7 @@ class Unknown(fpclib.Curation):
                 self.unity = cmd
             else:
                 raise ValueError("Unknown game type")
-        
+
         # Get title
         t = soup.find("h1")
         if t: self.title = t.text.strip()
@@ -81,10 +83,10 @@ class Unknown(fpclib.Curation):
                             cmd = "http://" + site + cmd
                         check_platform(url, fpclib.normalize(cmd)[-4:], cmd)
                         break
-            
+
             if not self.cmd:
                 raise ValueError("Unknown game type (HTML5 is not supported in generic curations)")
-    
+
     def get_files(self):
         if self.platform == "Unity":
             # Unity has an embed file created for it

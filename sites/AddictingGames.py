@@ -4,6 +4,7 @@ import fpclib
 import re
 
 regex = 'addictinggames.com'
+ver = 6
 
 TAGS = {
     "Shooting": "Action; Shooter",

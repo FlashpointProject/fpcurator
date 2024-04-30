@@ -18,6 +18,7 @@ MONTHS = {
 }
 
 regex = 'jayisgames.com'
+ver = 6
 
 TITLE = re.compile(r"Play (.*?), a Free online game")
 DEV = re.compile(r"(developed|created) by (\w+)", re.I)

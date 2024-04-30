@@ -6,6 +6,7 @@ from requests import session
 from datetime import datetime
 
 regex = 'gamejolt.com'
+ver = 6
 
 UNITY_EMBED = """<html>
     <head>
@@ -33,12 +34,12 @@ class GameJolt(fpclib.Curation):
         req_overview = sess.get('https://gamejolt.com/site-api/web/discover/games/overview/{}?ignore'.format(self.gameId)).json()
         for i in req_overview['payload']['builds']:
             if i['type'] != 'downloadable' and i['type'] != 'html':
-                
+
                 id_ = i['id']
                 req_token = sess.post('https://gamejolt.com/site-api/web/discover/games/builds/get-download-url/{}'.format(id_), data='{}').json()
                 token, = re.findall(r'token=([^&]+)', req_token['payload']['url'])
                 req_download = sess.get('https://gamejolt.net/site-api/gameserver/{}'.format(token)).json()
-                
+
                 # Title
                 self.title = req_download['payload']['game']['title']
 
@@ -78,7 +79,7 @@ class GameJolt(fpclib.Curation):
                                 for pparagraph in pcontent['content']:
                                     self.desc = '\r\n'.join(((self.desc if self.desc else ""), (pparagraph['text'] if ('text' in pparagraph) else pparagraph['content'][0]['text'])))
                 self.desc = self.desc.replace(' \r\n', ' ').replace('\r\n ', ' ').strip('\r\n')
-                
+
                 # Get Date
                 pub_date = i['added_on']
                 self.date = datetime.utcfromtimestamp(pub_date/1000).strftime('%Y-%m-%d')

@@ -6,6 +6,7 @@ import bs4
 from zipfile import ZipFile
 
 regex = 'therese.eveilleau.pagesperso-orange.fr'
+ver = 6
 
 class Therese(fpclib.Curation):
     def soupify(self):

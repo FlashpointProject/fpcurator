@@ -5,6 +5,8 @@ import re
 from html import unescape
 
 regex = "itch.io"
+ver = 6
+
 # Only handles at most two sublevels.
 PLATFORM = re.compile(r'new I\.View(\w+)Game\(')
 VIEW_DATA = re.compile(r'{"url":(.*?{(.*?{.*?}|[^{}]*)*}|[^{}]*)*}')
@@ -71,7 +73,7 @@ class ItchIO(fpclib.Curation):
             author = soup.find("td", text="Author").parent
             self.dev = [e.text for e in author.find_all("a")]
         except: pass
-        
+
         # Get Genre/Tags
         self.tags = []
         try:
@@ -92,13 +94,13 @@ class ItchIO(fpclib.Curation):
             if edition != None: tags = tags.rstrip(edition)
             self.tags += [tags]
         except: pass
-        
+
         # Get languages
         try:
             lang = soup.find("td", text="Languages").parent
             self.lang = [e["href"][-2:].lower() for e in lang.find_all("a")]
         except: pass
-            
+
         # Set publisher
         self.pub = "itch.io"
 
@@ -126,7 +128,7 @@ class ItchIO(fpclib.Curation):
                 style = re.search(r'background-.*?(?=})', str(soup.find('style'))).group(0).replace('https', 'http')
                 size = str(soup.select_one('.game_frame')['style'])
             except: pass
-        
+
         url = fpclib.normalize(self.src)
         if url[-1] == "/": url = url[:-1]
 
@@ -184,7 +186,7 @@ class ItchIO(fpclib.Curation):
                     raise ValueError("Script found but can't locate game")
             else:
                 raise ValueError("No game found on webpage")
-    
+
     def get_files(self):
         # If there is a file to download, download it
         if self.file:
