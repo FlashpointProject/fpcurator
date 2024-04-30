@@ -30,7 +30,7 @@ class Miniclip(fpclib.Curation):
 
         # Only HTML5 is supported
         self.platform = "HTML5"
-        self.app = fpclib.BASILISK
+        self.app = fpclib.FPNAVIGATOR
 
         # Get file for Launch Command
         url = GAME_URL.search(soup.select(".game-embed-wrapper > script")[1].string)[1]

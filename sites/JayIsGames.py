@@ -87,7 +87,7 @@ class JayIsGames(fpclib.Curation):
         else:
             # External game (hopefully html5)
             self.platform = "HTML5"
-            self.app = fpclib.BASILISK
+            self.app = fpclib.FPNAVIGATOR
 
             iframe = soup.select_one("#game-wrapper > iframe")
             if not iframe: raise ValueError("Could not find game iframe")

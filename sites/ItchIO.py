@@ -136,13 +136,13 @@ class ItchIO(fpclib.Curation):
         iframe = soup.select_one(".embed_wrapper > div > iframe")
         if placeholder and "data-iframe" in placeholder.attrs:
             self.platform = "HTML5"
-            self.app = fpclib.BASILISK
+            self.app = fpclib.FPNAVIGATOR
             self.cmd = url
             self.file = ""
             self.embed = HTML_EMBED % (self.title, style, STYLE_IFRAME % size, placeholder["data-iframe"])
         elif iframe:
             self.platform = "HTML5"
-            self.app = fpclib.BASILISK
+            self.app = fpclib.FPNAVIGATOR
             self.cmd = url
             self.file = ""
             self.embed = HTML_EMBED % (self.title, style, STYLE_IFRAME % size, str(iframe))
@@ -165,7 +165,7 @@ class ItchIO(fpclib.Curation):
                         self.embed = ""
                     elif platform == "Html":
                         self.platform = "HTML5"
-                        self.app = fpclib.BASILISK
+                        self.app = fpclib.FPNAVIGATOR
                         self.cmd = url # Helps deal with url-locks, I guess
                         self.embed = HTML_EMBED % (self.title, STYLE_IFRAME, IFRAME % fpclib.normalize(data["url"]))
                     elif platform == "Unity":

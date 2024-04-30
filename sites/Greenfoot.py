@@ -76,7 +76,7 @@ class Greenfoot(fpclib.Curation):
             self.html_embed = str(html_embed)
             self.js_one = "http://www.greenfoot.org" + str(html_embed.select_one("script")['src'])
             self.js_two = "http://www.greenfoot.org" + str(html_embed.find_all("script")[1]['src'])
-            self.add_app("HTML Emulated version", self.cmd_html, path=fpclib.BASILISK)
+            self.add_app("HTML Emulated version", self.cmd_html, path=fpclib.FPNAVIGATOR)
 
         if self.html_embed: self.cnotes = "If the applet version does not work, set the platform to HTML5 and have the alt app as the main version (delete %s)" % self.cmd[7:]
 

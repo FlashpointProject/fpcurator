@@ -6,7 +6,7 @@ import bs4, re, urllib, uuid
 regex = 'kongregate.com'
 
 IF_URL = re.compile(r'[\'"]iframe_url[\'"]:[\'"](.*?)[\'"]')
-SWF_URL = re.compile(r'[\'"]swfurl[\'"]:[\'"](.*?)[\'"]')
+SWF_URL = re.compile(r'swf_location\s?=\s?[\'\"]\/?\/?(.+?)(\?.+?)?[\'\"]')
 GAME_SWF = re.compile(r'[\'"]game_swf[\'"]:[\'"](.*?)[\'"]')
 EMBED_UNITY = re.compile(r'kongregateUnityDiv\\\",\s\\\"\/\/(.*?)\\",\s(\d*?),\s(\d*?),')
 UUID = re.compile(r'[0-9a-fA-F]{32}')
@@ -46,7 +46,7 @@ HTML_EMBED = """<html>
 class Kongregate(fpclib.Curation):
     def parse(self, soup):
         k_uuid = str(uuid.uuid4())
-        self.title = soup.find("h1", itemprop="name").text
+        self.title = soup.find("h1", itemprop="name").text.strip()
 
         # Get Logo
         try: self.logo = fpclib.normalize(soup.find("meta", property="og:image")["content"], keep_prot=True)
@@ -86,7 +86,7 @@ class Kongregate(fpclib.Curation):
 
         if len(scripts) > 3:
             # Effectively confirmed, this is a Flash or Unity game
-            gdata = scripts[3].string
+            gdata = scripts[4].string
             # If game_swf is present, that takes priority
             cmd = GAME_SWF.search(gdata)
             self.platform = "Flash"
@@ -111,7 +111,7 @@ class Kongregate(fpclib.Curation):
         else:
             # It's not a Flash game, so we will embed the html ourselves later
             self.platform = "HTML5"
-            self.app = fpclib.BASILISK
+            self.app = fpclib.FPNAVIGATOR
             self.cmd = fpclib.normalize(self.src)
             self.if_url = fpclib.normalize(if_url, keep_vars=True)
             self.if_file = fpclib.normalize(if_url)
