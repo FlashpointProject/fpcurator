@@ -35,6 +35,7 @@ try:
 
     import argparse
     import codecs
+    import base64
     import datetime
     import functools
     import pyperclip
@@ -221,8 +222,8 @@ FIELDS = {
 # This uuid uniquely defines fpcurator. (there is a 0 on the end after the text)
 UUID = '51be8a01-3307-4103-8913-c2f70e64d83'
 
-TITLE = "fpcurator v1.5.3"
-ABOUT = "Created by Zach K - v1.5.3"
+TITLE = "fpcurator v1.6.0"
+ABOUT = "Created by Zach K - v1.6.0"
 VER = 5
 
 SITES_FOLDER = "sites"
@@ -282,7 +283,7 @@ class Mainframe(tk.Tk):
         self.minsize(695, 650)
         self.title(TITLE)
 
-        self.iconphoto(False, tk.PhotoImage("icon.png"))
+        self.iconphoto(True, tk.PhotoImage(file="icon.png"))
         self.protocol("WM_DELETE_WINDOW", self.exit_window)
 
         # Cross-window variables
@@ -2035,7 +2036,7 @@ class Lister(tk.Frame):
 
         self.choice = tk.StringVar()
         self.choice.set("Tags")
-        c = ttk.Combobox(tframe, textvariable=self.choice, values=["Tags", "Platforms", "Game Master List", "Animation Master List"])
+        c = ttk.Combobox(tframe, textvariable=self.choice, values=["Tags", "Platforms"])
         c.pack(side="left")
 
         self.find_btn = ttk.Button(tframe, text="Find", command=self.find)

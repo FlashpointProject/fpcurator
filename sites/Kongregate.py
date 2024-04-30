@@ -5,12 +5,12 @@ import bs4, re, urllib, uuid
 
 regex = 'kongregate.com'
 
-IF_URL = re.compile('[\'"]iframe_url[\'"]:[\'"](.*?)[\'"]')
-SWF_URL = re.compile('[\'"]swfurl[\'"]:[\'"](.*?)[\'"]')
-GAME_SWF = re.compile('[\'"]game_swf[\'"]:[\'"](.*?)[\'"]')
+IF_URL = re.compile(r'[\'"]iframe_url[\'"]:[\'"](.*?)[\'"]')
+SWF_URL = re.compile(r'[\'"]swfurl[\'"]:[\'"](.*?)[\'"]')
+GAME_SWF = re.compile(r'[\'"]game_swf[\'"]:[\'"](.*?)[\'"]')
 EMBED_UNITY = re.compile(r'kongregateUnityDiv\\\",\s\\\"\/\/(.*?)\\",\s(\d*?),\s(\d*?),')
-UUID = re.compile('[0-9a-fA-F]{32}')
-SIZE = re.compile('[\'"]game_width[\'"]:(\d+),[\'"]game_height[\'"]:(\d+)')
+UUID = re.compile(r'[0-9a-fA-F]{32}')
+SIZE = re.compile(r'[\'"]game_width[\'"]:(\d+),[\'"]game_height[\'"]:(\d+)')
 
 UNITY_EMBED = """<html>
     <head>
@@ -55,7 +55,7 @@ class Kongregate(fpclib.Curation):
         # Get Developer and set Publisher
         self.dev = [dev.text.strip() for dev in soup.select(".game_dev_list > li")]
         self.pub = "Kongregate"
-        
+
         # Get Release Date
         date = soup.select_one(".game_pub_plays > p > .highcontrast").text
         self.date = date[-4:] + "-" + fpclib.MONTHS[date[:3]] + "-" + date[5:7]
@@ -116,7 +116,7 @@ class Kongregate(fpclib.Curation):
             self.if_url = fpclib.normalize(if_url, keep_vars=True)
             self.if_file = fpclib.normalize(if_url)
             self.size = SIZE.search(if_script)
-    
+
     def get_files(self):
         if self.platform == "HTML5" or self.platform == "Unity":
             # Download iframe that ought to be embedded
@@ -125,13 +125,13 @@ class Kongregate(fpclib.Curation):
             fpclib.replace(self.if_file[7:], "https:", "http:")
             # Create file to embed swf
             f = self.cmd[7:]
-            if f[-1] == "/": f += "index.html" 
+            if f[-1] == "/": f += "index.html"
             if self.platform == "HTML5": fpclib.write(f, HTML_EMBED % (self.title, self.size[1], self.size[2], self.if_file))
             else: fpclib.write(f, UNITY_EMBED % (self.title, self.size[1], self.size[2], self.if_file))
         else:
             # Flash games are downloaded normally
             super().get_files()
-    
+
     def save_image(self, url, file_name):
         # Surround save image with a try catch loop as some logos cannot be gotten.
         try:

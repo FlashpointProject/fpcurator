@@ -9,13 +9,13 @@ If you don't want to install python to use fpcurator, check the releases page fo
 
 ## Basic Usage
 
+You can launch the script using `poetry run python fpcurator.py` or `poe run`.
+
 Launch the script or executable and choose a tab. You can also drag and drop a list of urls on to the program (if you are using the executable or have python configured correctly) to quickly automatically curate them. For more detailed help on how to use the program, see the built-in "Help" button.
 
 When the program launches up, you may be prompted to download the latest site definitions for the Auto Curator. Site definitions (in the `sites` folder of this github) will be automatically updated over time and you will be prompted to update whenever a new update is available.
 
 If you are looking for command line usage, run `fpcurator --help` or `fpcurator.py --help` in the terminal of your choice.
-
-You can launch the script using `poetry run python fpcurator.py`.
 
 ## Auto Curator Website Support
 

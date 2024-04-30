@@ -1,12 +1,12 @@
 [tool.poetry]
 name = "fpcurator"
-version = "1.5.3"
+version = "1.6.0"
 description = "fpcurator is a Python and fpclib powered tool for downloading urls, auto-generating curations, bulk searching for already curated games, and listing tags/platforms/games/animations for Flashpoint."
 authors = ["mathgeniuszach <huntingmanzach@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = ">=3.9,<3.13" # Pyinstaller has this strange less than check
 deviantart = "^0.1.5"
 beautifulsoup4 = "^4.12.3"
 tkinterweb = "^3.23.5"
@@ -14,8 +14,21 @@ pyperclip = "^1.8.2"
 googletrans = "^3.0.0"
 qfile = "^1.1.0.7"
 python-levenshtein = "^0.25.0"
-fpclib = "^1.8.1"
+fpclib = "^1.8.2"
+
+[tool.poetry.group.dev.dependencies]
+pyinstaller = "^6.6.0"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poe.tasks.run]
+cmd = "poetry run python fpcurator.py"
+[tool.poe.tasks.update-defs]
+script = "scripts:update_defs"
+[tool.poe.tasks.build]
+script = 'scripts:build' # For cross-compilation, use wine
+[tool.poe.tasks.clean]
+script = 'scripts:clean'
+# build = 'poetry run pyinstaller fpcurator.py --onedir --upx-dir=upx --add-data="C:\Users\Zach\Documents\Code\git\fpcurator\Lib\site-packages\tkinterweb\;tkinterweb"'

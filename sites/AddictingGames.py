@@ -27,8 +27,8 @@ HTML_EMBED = """<body>
 </body>
 """
 
-DATA_PARSER = re.compile("type: '(.*?)',\s*source: '(.*?)'")
-MARKUP_MOVIE = re.compile('<param *name="movie" *value="(.*?)"')
+DATA_PARSER = re.compile(r"type: '(.*?)',\s*source: '(.*?)'")
+MARKUP_MOVIE = re.compile(r'<param *name="movie" *value="(.*?)"')
 
 class AddictingGames(fpclib.Curation):
     def parse(self, soup):
@@ -90,7 +90,7 @@ class AddictingGames(fpclib.Curation):
         else:
             # Unknown type
             raise ValueError("Unknown type '" + data[1] + "'")
-    
+
     def soupify(self):
         # html5lib is required to parse description correctly.
         return fpclib.get_soup(self.src, "html5lib") or fpclib.get_soup(self.src)
@@ -103,12 +103,12 @@ class AddictingGames(fpclib.Curation):
             fpclib.replace(self.if_file[7:], "https:", "http:")
             # Create html file for game
             f = self.cmd[7:]
-            if f[-1] == "/": f += "index.html" 
+            if f[-1] == "/": f += "index.html"
             fpclib.write(f, HTML_EMBED % self.if_file)
         else:
             # Flash games are downloaded normally
             super().get_files()
-    
+
     def save_image(self, url, file_name):
         # Surround save image with a try catch loop as some logos cannot be gotten.
         try:

@@ -4,8 +4,8 @@ import re
 
 regex = 'freearcade.com'
 
-SWF = re.compile("SWFObject\('(.*?)'")
-APPLET = re.compile("AppletObject\('(.*?)', '(.*?)', '(.*?)', '(.*?)'")
+SWF = re.compile(r"SWFObject\('(.*?)'")
+APPLET = re.compile(r"AppletObject\('(.*?)', '(.*?)', '(.*?)', '(.*?)'")
 
 class FreeArcade(fpclib.Curation):
     def parse(self, soup):
@@ -38,8 +38,8 @@ class FreeArcade(fpclib.Curation):
             # Save applet
             self.applet = str('<applet code="%s" name="%s" width="%s" height="%s"></applet>' % (applet[1], applet[2], applet[3], applet[4]))
             self.code = applet[1]
-            
-    
+
+
     def get_files(self):
         if self.platform == "Java":
             cmd = self.cmd[7:]
@@ -49,7 +49,7 @@ class FreeArcade(fpclib.Curation):
             fpclib.download_all((cmd[:cmd.rfind("/")+1] + self.code,))
         else:
             super().get_files()
-    
+
     def save_image(self, url, file_name):
         # Surround save image with a try catch loop as some logos cannot be gotten.
         try:

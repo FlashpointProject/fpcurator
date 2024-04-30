@@ -1,15 +1,15 @@
 # Don't include compiled python stuff
+**/__pycache__
+__pycache__
 *.pyc
 
 # Don't include IDE stuff
 .vscode
 
 # Don't include build and dist data and files
-upx
 fpcurator.spec
 build
 .venv.bat
-_*
 dist
 poetry.lock
 

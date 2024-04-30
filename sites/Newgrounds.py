@@ -15,7 +15,7 @@ HTML_EMBED = re.compile(r'var code = "(.*?)"; } else {')
 # This is a global variable that allows you to grab login-locked games. You'll have to replace it to get those games. You can comment it out if you like.
 TOKEN_HEADERS = {"COOKIE": "COOKIE_CONTAINING_TOKEN_GOES=HERE"}
 
-HTML_FILES = re.compile('.*\.(js|html|css|json)$')
+HTML_FILES = re.compile(r'.*\.(js|html|css|json)$')
 
 # This is the class to use to curate with. It is also required!
 class Newgrounds(fpclib.Curation):
@@ -25,7 +25,7 @@ class Newgrounds(fpclib.Curation):
         except:
             url = self.url if self.url[-1] != "/" else self.url[:-1]
             self._parse(fpclib.get_soup(url + "/format/flash"))
-        
+
     def _parse(self, osoup):
         # Check for login-lock
         login = "requires a Newgrounds account to play" in osoup.select_one(".column").text
@@ -33,7 +33,7 @@ class Newgrounds(fpclib.Curation):
             soup = fpclib.get_soup(self.url, headers=TOKEN_HEADERS)
         else:
             soup = osoup
-        
+
         # Get Developer(s)
         devsl = []
         try:
@@ -42,17 +42,17 @@ class Newgrounds(fpclib.Curation):
         except (AttributeError, TypeError):
             pass
         devs = "; ".join(devsl)
-        
+
         # Get Tags
         try:
             tags = "; ".join(soup.find('div', id='sidestats').find_all('dl')[1].find('a').text.split(' - '))
         except (AttributeError, IndexError, TypeError):
             tags = ""
-        
+
         # Get content area and header
         content_area = soup.find('div', id='content_area')
         header = content_area.find('h2', itemprop='name')
-        
+
         # Get Relese Date
         date = content_area.find('meta', itemprop='datePublished')['content'][:10]
         # Get Description and author comments
@@ -82,21 +82,21 @@ class Newgrounds(fpclib.Curation):
             lib = 'arcade'
         else:
             lib = 'theatre'
-        
+
         # Get Logo
         try:
             # Get id based on url
             nid = self.url[self.url.rfind("/")+1:]
             self.logo = f"https://picon.ngfiles.com/{nid[:-3]}000/flash_{nid}_card.png"
         except: pass
-        
-        
+
+
         # Determine Extreme
         if header['class'] in ['rated-m', 'rated-a']:
             extreme = 'Yes'
         else:
             extreme = 'No'
-        
+
         # Get embed code
         a = soup.select_one('.portal-barrier a')
         if a:
@@ -156,7 +156,7 @@ class Newgrounds(fpclib.Curation):
             html = '<html>\n    <head>\n        <title>%s</title>\n        <style>\n            %s\n        </style>\n    </head>\n    <body>\n        %s\n    </body>\n</html>' % (header.text, style, html_embed)
             # Save for writing
             self.set_meta(html=html, embed_url=fpclib.normalize(embed['url']))
-        
+
         # Set meta
         self.set_meta(
             title=header.text,
@@ -171,24 +171,24 @@ class Newgrounds(fpclib.Curation):
             app=app,
             cmd=cmd
         )
-    
+
     def get_files(self):
         html = self.get_meta('html')
         if html:
             cmd = self.get_meta('cmd')
             fpclib.write(cmd[cmd.index('://')+3:], html)
-            
+
             platform = self.get_meta('platform')
             if platform == 'HTML5':
                 fpclib.download_all([self.get_meta('embed_url')+'/index.html'])
             elif platform == 'Unity':
                 fpclib.download_all([self.get_meta('unity_file')])
-            
+
             # Replace all instances of https with http
             fpclib.replace(fpclib.scan_dir('', HTML_FILES)[0], 'https:', 'http:')
         else:
             super().get_files()
-    
+
     def save_image(self, url, file_name):
         # Surround save image with a try catch loop as some logos cannot be gotten.
         try:

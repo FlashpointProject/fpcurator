@@ -19,9 +19,9 @@ MONTHS = {
 
 regex = 'jayisgames.com'
 
-TITLE = re.compile("Play (.*?), a Free online game")
-DEV = re.compile("(developed|created) by (\w+)", re.I)
-DATE = re.compile("(.*?) (\d+), (\d+)")
+TITLE = re.compile(r"Play (.*?), a Free online game")
+DEV = re.compile(r"(developed|created) by (\w+)", re.I)
+DATE = re.compile(r"(.*?) (\d+), (\d+)")
 
 class JayIsGames(fpclib.Curation):
     def parse(self, soup):
@@ -33,7 +33,7 @@ class JayIsGames(fpclib.Curation):
             self.title = TITLE.search(soup.select_one("title").text.strip())[1]
         #self.logo = soup.find("meta", property="og:image")["content"] - Just grabs the Jay is games logo, not the game logo
         self.pub = "Jay Is Games"
-        
+
         # Get Description
         desc = soup.select_one(".entrybody > p")
         if desc:
@@ -41,7 +41,7 @@ class JayIsGames(fpclib.Curation):
         else:
             desc = soup.find("meta", attrs={"name": "description"})
             if desc: self.desc = desc["content"]
-        
+
         # Check for "Read More"
         more = soup.select_one(".read-more")
         if more:
@@ -97,7 +97,7 @@ class JayIsGames(fpclib.Curation):
             elif cmd[0] == "/": cmd = "http://jayisgames.com" + cmd
             else: cmd = url + cmd
             self.cmd = cmd
-    
+
     def get_files(self):
         if self.platform == "Unity":
             # Unity has an embed file created for it
@@ -112,11 +112,11 @@ class JayIsGames(fpclib.Curation):
         else:
             # All other platforms are very simple
             super().get_files()
-        
+
             if self.platform == "HTML5":
                 # If HTML5, replace all instances of https: with http:
                 fpclib.replace(self.cmd[7:], "https:", "http:")
-    
+
     def save_image(self, url, file_name):
         # Surround save image with a try catch loop as some logos cannot be gotten.
         try:
