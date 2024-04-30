@@ -223,8 +223,8 @@ FIELDS = {
 # This uuid uniquely defines fpcurator. (there is a 0 on the end after the text)
 UUID = '51be8a01-3307-4103-8913-c2f70e64d83'
 
-TITLE = "fpcurator v1.6.2"
-ABOUT = "Created by Zach K - v1.6.2"
+TITLE = "fpcurator v1.6.3"
+ABOUT = "Created by Zach K - v1.6.3"
 VER = 6
 
 SITES_FOLDER = "sites"
@@ -757,26 +757,31 @@ class AutoCurator(tk.Frame):
         return errs
 
     def i_curate(self):
-        txt = self.stxt.txt
-        # Get urls and curate them with all site definitions
-        urls = [i.strip() for i in txt.get("0.0", "end").replace("\r\n", "\n").replace("\r", "\n").split("\n") if i.strip()]
+        try:
+            txt = self.stxt.txt
+            # Get urls and curate them with all site definitions
+            urls = [i.strip() for i in txt.get("0.0", "end").replace("\r\n", "\n").replace("\r", "\n").split("\n") if i.strip()]
+            if len(urls) < 1:
+                tkm.showerror(message="No urls provided to curate!")
+                unfreeze()
+                return
 
-        errs = AutoCurator.s_curate(self.output.get(), self.defs, urls, self.titles.get(), self.save.get(), self.silent.get())
+            errs = AutoCurator.s_curate(self.output.get(), self.defs, urls, self.titles.get(), self.save.get(), self.silent.get())
 
-        if self.show_done.get():
-            if errs:
-                if len(errs) == len(urls):
-                    tkm.showerror(message=f"All {len(errs)} urls could not be curated.")
+            if self.show_done.get():
+                if errs:
+                    if len(errs) == len(urls):
+                        tkm.showerror(message=f"All {len(errs)} urls could not be curated.")
+                    else:
+                        tkm.showinfo(message=f"Successfully curated {len(urls)-len(errs)}/{len(urls)} urls.\n\n{len(errs)} urls could not be downloaded.")
                 else:
-                    tkm.showinfo(message=f"Successfully curated {len(urls)-len(errs)}/{len(urls)} urls.\n\n{len(errs)} urls could not be downloaded.")
-            else:
-                tkm.showinfo(message=f"Successfully curated {len(urls)} urls.")
+                    tkm.showinfo(message=f"Successfully curated {len(urls)} urls.")
 
-        if self.clear.get():
-            txt.delete("0.0", "end")
-            if errs: txt.insert("1.0", "\n".join([i for i, e, s in errs]))
-
-        unfreeze()
+            if self.clear.get():
+                txt.delete("0.0", "end")
+                if errs: txt.insert("1.0", "\n".join([i for i, e, s in errs]))
+        finally:
+            unfreeze()
 
     def curate(self):
         freeze("AutoCurating URLs")
