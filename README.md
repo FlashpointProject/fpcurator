@@ -71,4 +71,4 @@ It is recommended that if you add a site definition you create a pull request to
 
 For information on how to use beautifulsoup, check out the [official documentation](https://www.crummy.com/software/BeautifulSoup/bs4/doc/).
 
-For information on how to use fpclib, check out the [official documentation](https://xmgzx.github.io/apps/fpclib/).
+For information on how to use fpclib, check out the [official documentation](https://www.mathgeniuszach.com/bin/fpclib/).
