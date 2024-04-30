@@ -50,7 +50,7 @@ class GameJolt(fpclib.Curation):
                     self.if_filename = i['primary_file']['filename']
                 elif self.platform == "Html":
                     self.platform = "HTML5"
-                    self.app = fpclib.BASILISK
+                    self.app = fpclib.FPNAVIGATOR
                     self.embed = ""
                     self.if_filename = 'index.html'
                 elif self.platform == "Unity":

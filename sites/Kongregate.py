@@ -111,7 +111,7 @@ class Kongregate(fpclib.Curation):
         else:
             # It's not a Flash game, so we will embed the html ourselves later
             self.platform = "HTML5"
-            self.app = fpclib.BASILISK
+            self.app = fpclib.FPNAVIGATOR
             self.cmd = fpclib.normalize(self.src)
             self.if_url = fpclib.normalize(if_url, keep_vars=True)
             self.if_file = fpclib.normalize(if_url)

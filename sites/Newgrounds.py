@@ -148,7 +148,7 @@ class Newgrounds(fpclib.Curation):
         else:
             # Basic data
             platform = 'HTML5'
-            app = fpclib.BASILISK
+            app = fpclib.FPNAVIGATOR
             cmd = fpclib.normalize(self.get_meta('source'))
             # Setup html file
             style = 'body { background-color: #000000; height: 100%; margin: 0; }\n            div { position: absolute; top: 0; bottom: 0; left: 0; right: 0; margin: auto; }'

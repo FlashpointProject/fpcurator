@@ -9,11 +9,11 @@ If you don't want to install python to use fpcurator, check the releases page fo
 
 ## Basic Usage
 
-You can launch the script using `poetry run python fpcurator.py` or `poe run`.
+You can add the necessary dependencies with `poetry install` then launch the script using `poetry run python fpcurator.py` or `poe run`.
 
 Launch the script or executable and choose a tab. You can also drag and drop a list of urls on to the program (if you are using the executable or have python configured correctly) to quickly automatically curate them. For more detailed help on how to use the program, see the built-in "Help" button.
 
-When the program launches up, you may be prompted to download the latest site definitions for the Auto Curator. Site definitions (in the `sites` folder of this github) will be automatically updated over time and you will be prompted to update whenever a new update is available.
+When the program launches up, you may be prompted to download the latest site definitions for the Auto Curator. Site definitions (in the `sites` folder of this github) will be automatically updated over time and you will be prompted to update whenever a new update is available and/or you made changes to site definitions.
 
 If you are looking for command line usage, run `fpcurator --help` or `fpcurator.py --help` in the terminal of your choice.
 
@@ -24,22 +24,22 @@ The Auto Curator supports auto curating games from these websites:
 - [Addicting Games](https://www.addictinggames.com/) (Flash and HTML5)
 - [Construct](https://www.construct.net/) (HTML5)
 - [Coolmath Games](https://www.coolmathgames.com/) (HTML5)
-- [Deviant Art](https://www.deviantart.com/) (Flash) - \*
+- [Deviant Art](https://www.deviantart.com/) (SFW Flash) - \*
 - [FreeArcade](http://www.freearcade.com/) (Flash or Java)
 - [Fur Affinity](https://www.furaffinity.net/) (SFW Flash)
 - [Game Jolt](https://gamejolt.com/) (Flash or Unity)
 - [GameGame](https://game-game.com/) (Flash or HTML5)
-- [Greenfoot](https://www.greenfoot.org/collections/) (Java)
+- [Greenfoot](https://www.greenfoot.org/collections/) (Java or HTML5)
 - [itch.io](https://itch.io/) (Flash, Java, Unity, or HTML5)
 - [Jay is games](https://jayisgames.com/) (Flash, Shockwave, Unity, or HTML5)
 - [Kongregate](https://www.kongregate.com/) (Flash, Unity, or HTML5)
 - [Mathématiques Magiques](http://therese.eveilleau.pagesperso-orange.fr) (Flash)
 - [Miniclip](https://www.miniclip.com/) (HTML5)
-- [Newgrounds](https://www.newgrounds.com/) (Flash, Unity, or HTML5)
+- [Newgrounds](https://www.newgrounds.com/) (SFW Flash, Unity, or HTML5)
 - [Y8](https://www.y8.com/) (Flash, Shockwave, Unity, or HTML5)
 - Unknown websites (Flash, Shockwave, Unity, or Java). HTML5 is **NOT** supported. This may not work on every website.
 
-\* - Deviant Art requires a clients.txt file to be present next to the script, executable, or bat file with the contents `DEVIANTART_ID={ID GOES HERE}` and `DEVIANTART_SECRET={SECRET GOES HERE}` on two lines with the `{THING GOES HERE}`s replaced with the respective content.
+\* - Deviant Art requires a clients.txt file to be present next to the script, executable, or bat file with the contents `DEVIANTART_ID={ID GOES HERE}` and `DEVIANTART_SECRET={SECRET GOES HERE}` on two lines with the `{THING GOES HERE}`s replaced with an user's [application](https://www.deviantart.com/developers/)'s content.
 
 To add support for other pages not supported by the tool, first start by creating a file named `<WebsiteName>.py` inside the `sites` folder next to the script/executable and putting this code inside it:
 

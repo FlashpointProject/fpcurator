@@ -58,7 +58,7 @@ class CoolmathGames(fpclib.Curation):
             title=title,
             pub='Coolmath Games',
             tech='HTML5',
-            app=fpclib.BASILISK,
+            app=fpclib.FPNAVIGATOR,
             cmd_file=cmd_file,
             cmd=cmd,
             desc=desc

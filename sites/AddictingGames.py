@@ -72,7 +72,7 @@ class AddictingGames(fpclib.Curation):
         elif data[1] == "html5_game_url":
             # This is an HTML5 game
             self.platform = "HTML5"
-            self.app = fpclib.BASILISK
+            self.app = fpclib.FPNAVIGATOR
             self.if_url = fpclib.normalize(url, keep_vars=True)
             self.if_file = fpclib.normalize(url)
             self.cmd = fpclib.normalize(self.src)
