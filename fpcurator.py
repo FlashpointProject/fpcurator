@@ -223,8 +223,8 @@ FIELDS = {
 # This uuid uniquely defines fpcurator. (there is a 0 on the end after the text)
 UUID = '51be8a01-3307-4103-8913-c2f70e64d83'
 
-TITLE = "fpcurator v1.6.4"
-ABOUT = "Created by Zach K - v1.6.4"
+TITLE = "fpcurator v1.6.3"
+ABOUT = "Created by Zach K - v1.6.3"
 VER = 6
 
 SITES_FOLDER = "sites"

@@ -1,7 +1,7 @@
 # Newgrounds definition. Supports HTML5, Flash, and Unity
 
 import fpclib
-import codecs, json, re, bs4
+import json, re, bs4
 
 # This is the regex that will be used to match this site. It is required!
 regex = 'newgrounds.com'
