@@ -1,5 +1,6 @@
 # itch.io site definition (This is just the Unknown site definition but with a few extra kinks)
 
+import json
 import fpclib
 import re
 from html import unescape
