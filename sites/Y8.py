@@ -56,7 +56,6 @@ class Y8(fpclib.Curation):
 
         # Get launch command
         flash_async_content = soup.find("div", {"data-async-content": True})
-        print(flash_async_content)
         if(flash_async_content):
             soup2 = BeautifulSoup(unescape(flash_async_content.get("data-async-content")), "html.parser")
             flash_embed = soup2.find("embed")
