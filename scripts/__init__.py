@@ -37,6 +37,8 @@ def build():
               f' --add-data="{tkinter.__path__[0]}{os.pathsep}tkinter"' +
               f' --add-data="{tkinterweb.__path__[0]}{os.pathsep}tkinterweb"' +
               f' --add-data="{PIL.__path__[0]}{os.pathsep}PIL"')
+    shutil.copyfile('clients.txt', "dist/fpcurator/clients.txt")
+    shutil.copyfile('icon.png', "dist/fpcurator/icon.png")
 
 def clean():
     rmpycache()

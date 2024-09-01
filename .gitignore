@@ -24,3 +24,6 @@ data.json
 errors.txt
 search
 output
+
+# Don't include personal auth
+clients.txt

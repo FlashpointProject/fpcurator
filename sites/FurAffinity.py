@@ -2,6 +2,7 @@
 
 import fpclib
 import re
+from os import path
 
 regex = 'furaffinity.net'
 ver = 6
@@ -9,7 +10,7 @@ ver = 6
 class FurAffinity(fpclib.Curation):
     def get_auth_from_file(self, clients_file, param_name):
         try: client_data = fpclib.read(clients_file)
-        except: client_data = fpclib.read("./" + clients_file)
+        except: client_data = fpclib.read(path.abspath(path.join(path.dirname(__file__),"..")) + "\\clients.txt")
         try: return re.search(param_name + r'=(.*?)(\r\n|$)', client_data).group(1)
         except: raise ValueError(clients_file + f' is missing data for "{param_name}=".')
     
