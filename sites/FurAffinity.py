@@ -6,19 +6,17 @@ import re
 regex = 'furaffinity.net'
 ver = 6
 
-COOKIE_PARAM='FURAFFINITY_COOKIE'
-
 class FurAffinity(fpclib.Curation):
-    def get_auth_from_file(self, clients_file):
+    def get_auth_from_file(self, clients_file, param_name):
         try: client_data = fpclib.read(clients_file)
         except: client_data = fpclib.read("./" + clients_file)
-        try: return re.search(COOKIE_PARAM + r'=(.*?)(\r\n|$)', client_data).group(1)
-        except: raise ValueError(clients_file + f' is missing data for "{COOKIE_PARAM}=".')
+        try: return re.search(param_name + r'=(.*?)(\r\n|$)', client_data).group(1)
+        except: raise ValueError(clients_file + f' is missing data for "{param_name}=".')
     
     def parse(self, soup):
         download_button = soup.find(class_='download')
         if download_button == None:
-            cookie = self.get_auth_from_file('clients.txt')
+            cookie = self.get_auth_from_file('clients.txt', 'FURAFFINITY_COOKIE')
             if cookie == '':
                 raise ValueError("NSFW entry; add a valid user cookie in clients.txt's FURAFFINITY_COOKIE variable.")
             soup = fpclib.get_soup(self.url, headers={"COOKIE": cookie})

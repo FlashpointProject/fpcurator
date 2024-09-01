@@ -41,7 +41,7 @@ The Auto Curator supports auto curating games from these websites:
 
 \* - Deviant Art requires a clients.txt file to be present next to the script, executable, or bat file with the contents `DEVIANTART_ID={ID GOES HERE}` and `DEVIANTART_SECRET={SECRET GOES HERE}` on two lines with the `{THING GOES HERE}`s replaced with an user's [application](https://www.deviantart.com/developers/)'s content.
 
-\*\* - NSFW FurAffinity and Newgrounds requests require a cookie from a logged in user into the definition's `TOKEN_HEADER` variable.
+\*\* - NSFW FurAffinity and Newgrounds requests require a cookie from a logged in user into clients.txt's respective variables.
 
 To add support for other pages not supported by the tool, first start by creating a file named `<WebsiteName>.py` inside the `sites` folder next to the script/executable and putting this code inside it:
 
