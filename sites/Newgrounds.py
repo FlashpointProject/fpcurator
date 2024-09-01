@@ -19,7 +19,7 @@ HTML_FILES = re.compile(r'.*\.(js|html|css|json)$')
 
 # This is the class to use to curate with. It is also required!
 class Newgrounds(fpclib.Curation):
-    def get_auth_from_file(self, clients_file, param_name):
+    def get_auth_from_file(self, param_name, clients_file="clients.txt"):
         try: client_data = fpclib.read(clients_file)
         except: client_data = fpclib.read(str(Path(__file__).parent.parent / clients_file))
         param_value = dict([line.split("=",1) for line in client_data.splitlines()]).get(param_name)
@@ -38,7 +38,7 @@ class Newgrounds(fpclib.Curation):
         try: login_required = "requires a Newgrounds account to play" in soup.select_one(".column").text
         except: login_required = True
         if login_required:
-            cookie = self.get_auth_from_file('clients.txt', 'NEWGROUNDS_COOKIE')
+            cookie = self.get_auth_from_file('NEWGROUNDS_COOKIE')
             if cookie == '':
                 raise ValueError("NSFW entry or limit rate reached; add a valid user cookie in clients.txt's NEWGROUNDS_COOKIE variable.")
             soup = fpclib.get_soup(self.url, headers={"COOKIE": cookie})

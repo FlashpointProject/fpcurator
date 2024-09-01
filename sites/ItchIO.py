@@ -4,6 +4,7 @@ import json
 import fpclib
 import re
 from html import unescape
+from pathlib import Path
 
 regex = "itch.io"
 ver = 6
@@ -54,6 +55,13 @@ STYLE_IFRAME = """iframe { %s; }"""
 IFRAME = """<iframe src="%s"></iframe>"""
 
 class ItchIO(fpclib.Curation):
+    def get_auth_from_file(self, param_name, clients_file="clients.txt"):
+        try: client_data = fpclib.read(clients_file)
+        except: client_data = fpclib.read(str(Path(__file__).parent.parent / clients_file))
+        param_value = dict([line.split("=",1) for line in client_data.splitlines()]).get(param_name)
+        if param_value is None or param_value == '': raise ValueError(clients_file + f' is missing data for "{param_name}=".')
+        return param_value
+
     def parse(self, soup):
         # Get title
         self.title = soup.find("h1", "game_title").text
@@ -106,11 +114,18 @@ class ItchIO(fpclib.Curation):
         self.pub = "itch.io"
 
         # Release date
-        # Currently won't get the date as it only shows up by being logged
+        # If not available, tries to get as a logged in user
         try:
             info_table = soup.select_one(".game_info_panel_widget tbody")
             self.date = fpclib.DP_UK.parse(re.search(r'Published<\/td><td><abbr title="(.+?)"', str(info_table)).group(1))
         except: pass
+        if self.date == None:
+            try:
+                cookie = self.get_auth_from_file('ITCHIO_COOKIE')
+                soup = fpclib.get_soup(self.url, headers={"COOKIE": cookie})
+                info_table = soup.select_one(".game_info_panel_widget tbody")
+                self.date = fpclib.DP_UK.parse(re.search(r'Published<\/td><td><abbr title="(.+?)"', str(info_table)).group(1))
+            except: pass
 
         # Description
         try:

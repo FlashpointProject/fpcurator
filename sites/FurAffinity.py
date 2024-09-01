@@ -8,7 +8,7 @@ regex = 'furaffinity.net'
 ver = 6
 
 class FurAffinity(fpclib.Curation):
-    def get_auth_from_file(self, clients_file, param_name):
+    def get_auth_from_file(self, param_name, clients_file="clients.txt"):
         try: client_data = fpclib.read(clients_file)
         except: client_data = fpclib.read(str(Path(__file__).parent.parent / clients_file))
         param_value = dict([line.split("=",1) for line in client_data.splitlines()]).get(param_name)
@@ -18,7 +18,7 @@ class FurAffinity(fpclib.Curation):
     def parse(self, soup):
         download_button = soup.find(class_='download')
         if download_button == None:
-            cookie = self.get_auth_from_file('clients.txt', 'FURAFFINITY_COOKIE')
+            cookie = self.get_auth_from_file('FURAFFINITY_COOKIE')
             if cookie == '':
                 raise ValueError("NSFW entry; add a valid user cookie in clients.txt's FURAFFINITY_COOKIE variable.")
             soup = fpclib.get_soup(self.url, headers={"COOKIE": cookie})

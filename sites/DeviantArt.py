@@ -68,7 +68,7 @@ DESC_REPLACEMENTS = [
 ]
 
 class DeviantArt(fpclib.Curation):
-    def get_auth_from_file(self, clients_file, param_name):
+    def get_auth_from_file(self, param_name, clients_file="clients.txt"):
         try: client_data = fpclib.read(clients_file)
         except: client_data = fpclib.read(str(Path(__file__).parent.parent / clients_file))
         param_value = dict([line.split("=",1) for line in client_data.splitlines()]).get(param_name)
@@ -76,8 +76,8 @@ class DeviantArt(fpclib.Curation):
         return param_value
 
     def parse(self, soup):
-        client_id = self.get_auth_from_file('clients.txt', 'DEVIANTART_ID')
-        client_secret = self.get_auth_from_file('clients.txt', 'DEVIANTART_SECRET')
+        client_id = self.get_auth_from_file('DEVIANTART_ID')
+        client_secret = self.get_auth_from_file('DEVIANTART_SECRET')
         # Connect to DeviantArt
         try: DA_CLIENT = deviantart.Api(client_id, client_secret)
         except: raise ValueError('Could not setup DeviantArt API.')
