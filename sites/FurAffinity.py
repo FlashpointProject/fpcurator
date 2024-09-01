@@ -6,19 +6,25 @@ import re
 regex = 'furaffinity.net'
 ver = 6
 
-# This is a global variable that allows you to grab login-locked games. You'll have to replace it to get those games.
-TOKEN_HEADERS = {"COOKIE": ""}
+COOKIE_PARAM='FURAFFINITY_COOKIE'
 
 class FurAffinity(fpclib.Curation):
+    def get_auth_from_file(self, clients_file):
+        try: client_data = fpclib.read(clients_file)
+        except: client_data = fpclib.read("./" + clients_file)
+        try: return re.search(COOKIE_PARAM + r'=(.*?)(\r\n|$)', client_data).group(1)
+        except: raise ValueError(clients_file + f' is missing data for "{COOKIE_PARAM}=".')
+    
     def parse(self, soup):
         download_button = soup.find(class_='download')
         if download_button == None:
-            if TOKEN_HEADERS['COOKIE'] == '':
-                raise ValueError("NSFW entry; add a valid user cookie in sites/FurAffinity.py's TOKEN_HEADERS variable, then click the 'Reload' button in fpcurator.")
-            soup = fpclib.get_soup(self.url, headers=TOKEN_HEADERS)
+            cookie = self.get_auth_from_file('clients.txt')
+            if cookie == '':
+                raise ValueError("NSFW entry; add a valid user cookie in clients.txt's FURAFFINITY_COOKIE variable.")
+            soup = fpclib.get_soup(self.url, headers={"COOKIE": cookie})
             download_button = soup.find(class_='download')
             if download_button == None:
-                raise ValueError("NSFW entry; add a valid user cookie in sites/FurAffinity.py's TOKEN_HEADERS variable, then click the 'Reload' button in fpcurator.")
+                raise ValueError("NSFW entry; add a valid user cookie in clients.txt's FURAFFINITY_COOKIE variable.")
 
         self.cmd = 'http:' + download_button.a['href']
         if not self.cmd.endswith(".swf"): raise ValueError("No game found on webpage.")
