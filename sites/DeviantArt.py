@@ -3,7 +3,7 @@
 from html import unescape
 import fpclib
 import re, deviantart
-from os.path import exists
+from pathlib import Path
 
 regex = 'deviantart.com'
 ver = 6
@@ -68,11 +68,21 @@ DESC_REPLACEMENTS = [
 ]
 
 class DeviantArt(fpclib.Curation):
-    def parse(self, soup):
-        DA_CLIENT = self.setup_api_from_file('clients.txt')
+    def get_auth_from_file(self, param_name, clients_file="clients.txt"):
+        try: client_data = fpclib.read(clients_file)
+        except: client_data = fpclib.read(str(Path(__file__).parent.parent / clients_file))
+        param_value = dict([line.split("=",1) for line in client_data.splitlines()]).get(param_name)
+        if param_value is None or param_value == '': raise ValueError(clients_file + f' is missing data for "{param_name}=".')
+        return param_value
 
+    def parse(self, soup):
+        client_id = self.get_auth_from_file('DEVIANTART_ID')
+        client_secret = self.get_auth_from_file('DEVIANTART_SECRET')
+        # Connect to DeviantArt
+        try: DA_CLIENT = deviantart.Api(client_id, client_secret)
+        except: raise ValueError('Could not setup DeviantArt API.')
+    
         uuid = soup.find("meta", property="da:appurl")["content"][23:]
-        swfurl = DA_CLIENT.download_deviation(uuid)
         try: swfurl = DA_CLIENT.download_deviation(uuid)
         except: raise ValueError(self.src + ': Work is not downloadable. UUID '+ uuid)
         if not swfurl['filename'].endswith('.swf'):
@@ -116,20 +126,3 @@ class DeviantArt(fpclib.Curation):
         try:
             fpclib.download_image(url, name=file_name)
         except: pass
-
-    def setup_api_from_file(self, dafilename):
-        # Get Client's id and secret
-        if exists(dafilename):
-            client_data = fpclib.read(dafilename)
-        else:
-            client_data = fpclib.read("./" + dafilename)
-
-        try:
-            client_id = re.search(r'DEVIANTART_ID=(.*?)(\r\n|$)', client_data).group(1)
-            client_secret = re.search(r'DEVIANTART_SECRET=(.*?)(\r\n|$)', client_data).group(1)
-        except: raise ValueError(dafilename +' is missing one more parameters (ID=[client_id]\\nSECRET=[client_secret]).')
-
-        # Connect to DeviantArt
-        try: da = deviantart.Api(client_id, client_secret)
-        except: raise ValueError('Could not setup DeviantArt API.')
-        return da

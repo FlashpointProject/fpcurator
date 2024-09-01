@@ -1,7 +1,8 @@
 # Newgrounds definition. Supports HTML5, Flash, and Unity
 
 import fpclib
-import codecs, json, re, bs4
+import json, re, bs4
+from pathlib import Path
 
 # This is the regex that will be used to match this site. It is required!
 regex = 'newgrounds.com'
@@ -14,13 +15,17 @@ priority = 0
 # You may define as many global variables as you like, though these are not required.
 EMBED_CONT = re.compile(r'embedController\((\[.*\])(,\w+)+\);')
 HTML_EMBED = re.compile(r'var code = "(.*?)"; } else {')
-# This is a global variable that allows you to grab login-locked games. You'll have to replace it to get those games. You can comment it out if you like.
-TOKEN_HEADERS = {"COOKIE": "COOKIE_CONTAINING_TOKEN_GOES=HERE"}
-
 HTML_FILES = re.compile(r'.*\.(js|html|css|json)$')
 
 # This is the class to use to curate with. It is also required!
 class Newgrounds(fpclib.Curation):
+    def get_auth_from_file(self, param_name, clients_file="clients.txt"):
+        try: client_data = fpclib.read(clients_file)
+        except: client_data = fpclib.read(str(Path(__file__).parent.parent / clients_file))
+        param_value = dict([line.split("=",1) for line in client_data.splitlines()]).get(param_name)
+        if param_value is None or param_value == '': raise ValueError(clients_file + f' is missing data for "{param_name}=".')
+        return param_value
+
     def parse(self, osoup):
         try:
             self._parse(osoup)
@@ -28,13 +33,15 @@ class Newgrounds(fpclib.Curation):
             url = self.url if self.url[-1] != "/" else self.url[:-1]
             self._parse(fpclib.get_soup(url + "/format/flash"))
 
-    def _parse(self, osoup):
+    def _parse(self, soup):
         # Check for login-lock
-        login = "requires a Newgrounds account to play" in osoup.select_one(".column").text
-        if login:
-            soup = fpclib.get_soup(self.url, headers=TOKEN_HEADERS)
-        else:
-            soup = osoup
+        try: login_required = "requires a Newgrounds account to play" in soup.select_one(".column").text
+        except: login_required = True
+        if login_required:
+            cookie = self.get_auth_from_file('NEWGROUNDS_COOKIE')
+            if cookie == '':
+                raise ValueError("NSFW entry or limit rate reached; add a valid user cookie in clients.txt's NEWGROUNDS_COOKIE variable.")
+            soup = fpclib.get_soup(self.url, headers={"COOKIE": cookie})
 
         # Get Developer(s)
         devsl = []

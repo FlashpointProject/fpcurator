@@ -2,15 +2,32 @@
 
 import fpclib
 import re
+from pathlib import Path
 
 regex = 'furaffinity.net'
 ver = 6
 
 class FurAffinity(fpclib.Curation):
+    def get_auth_from_file(self, param_name, clients_file="clients.txt"):
+        try: client_data = fpclib.read(clients_file)
+        except: client_data = fpclib.read(str(Path(__file__).parent.parent / clients_file))
+        param_value = dict([line.split("=",1) for line in client_data.splitlines()]).get(param_name)
+        if param_value is None or param_value == '': raise ValueError(clients_file + f' is missing data for "{param_name}=".')
+        return param_value
+    
     def parse(self, soup):
-        # Get launch command
-        self.cmd = 'http:' + soup.find(class_='download').a['href']
-        if not self.cmd.endswith(".swf"): raise ValueError("No game found on webpage. Is it a NSFW entry?")
+        download_button = soup.find(class_='download')
+        if download_button == None:
+            cookie = self.get_auth_from_file('FURAFFINITY_COOKIE')
+            if cookie == '':
+                raise ValueError("NSFW entry; add a valid user cookie in clients.txt's FURAFFINITY_COOKIE variable.")
+            soup = fpclib.get_soup(self.url, headers={"COOKIE": cookie})
+            download_button = soup.find(class_='download')
+            if download_button == None:
+                raise ValueError("NSFW entry; add a valid user cookie in clients.txt's FURAFFINITY_COOKIE variable.")
+
+        self.cmd = 'http:' + download_button.a['href']
+        if not self.cmd.endswith(".swf"): raise ValueError("No game found on webpage.")
 
         # Get title
         self.title = soup.select_one(".submission-title").text
