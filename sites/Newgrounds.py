@@ -2,7 +2,7 @@
 
 import fpclib
 import json, re, bs4
-from os import path
+from pathlib import Path
 
 # This is the regex that will be used to match this site. It is required!
 regex = 'newgrounds.com'
@@ -21,15 +21,15 @@ HTML_FILES = re.compile(r'.*\.(js|html|css|json)$')
 class Newgrounds(fpclib.Curation):
     def get_auth_from_file(self, clients_file, param_name):
         try: client_data = fpclib.read(clients_file)
-        except: client_data = fpclib.read(path.abspath(path.join(path.dirname(__file__),"..")) + "\\clients.txt")
-        try: return re.search(param_name + r'=(.*?)(\r\n|$)', client_data).group(1)
-        except: raise ValueError(clients_file + f' is missing data for "{param_name}=".')
+        except: client_data = fpclib.read(str(Path(__file__).parent.parent / clients_file))
+        param_value = dict([line.split("=",1) for line in client_data.splitlines()]).get(param_name)
+        if param_value is None or param_value == '': raise ValueError(clients_file + f' is missing data for "{param_name}=".')
+        return param_value
 
     def parse(self, osoup):
         try:
             self._parse(osoup)
         except:
-            print('ue')
             url = self.url if self.url[-1] != "/" else self.url[:-1]
             self._parse(fpclib.get_soup(url + "/format/flash"))
 
