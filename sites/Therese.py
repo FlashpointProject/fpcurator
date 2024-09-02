@@ -11,7 +11,7 @@ ver = 6
 class Therese(fpclib.Curation):
     def soupify(self):
         with requests.get(fpclib.normalize(self.src, True, True, True)) as response:
-            return bs4.BeautifulSoup(response.content)
+            return bs4.BeautifulSoup(response.content, "html5lib")
 
     def parse(self, soup):
         self.title = soup.select_one("title").text.strip()

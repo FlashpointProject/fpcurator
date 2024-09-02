@@ -7,10 +7,11 @@ try:
     CONSOLE = windll.kernel32.GetConsoleWindow()
 except:
     CONSOLE = None
+    windll = None
 CONSOLE_OPEN = True
 
 def toggle_console():
-    if CONSOLE:
+    if CONSOLE and windll:
         global CONSOLE_OPEN
         if CONSOLE_OPEN:
             windll.user32.ShowWindow(CONSOLE, 0)
@@ -29,28 +30,29 @@ try:
     import tkinterweb as tkw
 
     import fpclib
-    import deviantart
+    import deviantart  # pyright: ignore [reportUnusedImport] # To make sure it's included in builds
     import os, sys, time
-    import re, json, bs4
+    import re, json
+    import bs4   # pyright: ignore [reportUnusedImport] # To make sure it's included in builds
 
     import argparse
     import codecs
-    import base64
+    import base64  # pyright: ignore [reportUnusedImport] # To make sure it's included in builds?
     import datetime
     import functools
     import pyperclip
     import pathlib
-    import googletrans
-    import qfile
+    import googletrans  # pyright: ignore [reportUnusedImport] # To make sure it's included in builds
+    import qfile  # pyright: ignore [reportUnusedImport] # To make sure it's included in builds
     import glob
     import importlib
     import sqlite3
     import threading
     import traceback
-    import urllib
+    import urllib  # pyright: ignore [reportUnusedImport] # To make sure it's included in builds?
     import uuid
     import webbrowser
-    import zipfile
+    import zipfile  # pyright: ignore [reportUnusedImport] # To make sure it's included in builds?
 finally:
     toggle_console()
 
@@ -223,9 +225,9 @@ FIELDS = {
 # This uuid uniquely defines fpcurator. (there is a 0 on the end after the text)
 UUID = '51be8a01-3307-4103-8913-c2f70e64d83'
 
-TITLE = "fpcurator v1.6.3"
-ABOUT = "Created by Zach K - v1.6.3"
-VER = 6
+TITLE = "fpcurator v1.7.0"
+ABOUT = "Created by Zach K - v1.7.0"
+VER = 7
 
 SITES_FOLDER = "sites"
 
@@ -291,7 +293,7 @@ class Mainframe(tk.Tk):
                 self.iconphoto(True, tk.PhotoImage(file=icons[0]))
             else:
                 self.iconphoto(True, tk.PhotoImage(file="icon.png"))
-        except Exception as e:
+        except Exception:
             fpclib.debug('Could not find fpcurator icon', 1, pre='[ERR]  ')
 
         self.protocol("WM_DELETE_WINDOW", self.exit_window)
@@ -352,7 +354,7 @@ class Mainframe(tk.Tk):
         self.frozen = False
         self.after(100, self.check_freeze)
 
-    def tab_change(self, event):
+    def tab_change(self, _event):
         tab = self.tabs.select()
         if tab == ".!autocurator":
             self.autocurator.stxt.txt.focus_set()
@@ -410,7 +412,7 @@ class Mainframe(tk.Tk):
         if not self.help:
             self.help = Help(self)
 
-    def set_debug_level(self, name, index, mode):
+    def set_debug_level(self, _name, _index, _mode):
         dl = self.debug_level.get()
         try:
             fpclib.DEBUG_LEVEL = int(dl)
@@ -614,15 +616,15 @@ class AutoCurator(tk.Frame):
         self.show_done = tk.BooleanVar()
         self.show_done.set(True)
 
-        save = tk.Checkbutton(cframe, bg="white", text='Save', var=self.save)
+        save = tk.Checkbutton(cframe, bg="white", text='Save', var=self.save) # pyright: ignore [reportCallIssue] # tkinter does have "var"
         save.pack(side="left", padx=5)
         #silent = tk.Checkbutton(cframe, bg="white", text="Silent", var=self.silent)
         #silent.pack(side="left", padx=5)
-        titles = tk.Checkbutton(cframe, bg="white", text="Use Titles", var=self.titles)
+        titles = tk.Checkbutton(cframe, bg="white", text="Use Titles", var=self.titles) # pyright: ignore [reportCallIssue] # tkinter does have "var"
         titles.pack(side="left")
-        clear = tk.Checkbutton(cframe, bg="white", text="Clear Done URLs", var=self.clear)
+        clear = tk.Checkbutton(cframe, bg="white", text="Clear Done URLs", var=self.clear) # pyright: ignore [reportCallIssue] # tkinter does have "var"
         clear.pack(side="left", padx=5)
-        show_done = tk.Checkbutton(cframe, bg="white", text='Notify When Done', var=self.show_done)
+        show_done = tk.Checkbutton(cframe, bg="white", text='Notify When Done', var=self.show_done) # pyright: ignore [reportCallIssue] # tkinter does have "var"
         show_done.pack(side="left")
 
         Tooltip(save, text="When checked, the auto curator will save it's progress so if it fails from an error, the tool will resume where it left off given the same urls.")
@@ -658,7 +660,8 @@ class AutoCurator(tk.Frame):
             self.output.delete(0, "end")
             self.output.insert(0, folder)
 
-    def download_defs(data, silent=False):
+    @staticmethod
+    def download_defs(data: str, silent=False):
         print("[INFO] Downloading site definitions from online")
         global DEFS_GOTTEN
         DEFS_GOTTEN = True
@@ -680,6 +683,7 @@ class AutoCurator(tk.Frame):
             tkm.showinfo(message="Definitions downloaded. Restart the program to load them. The program will now exit.")
             sys.exit(0)
 
+    @staticmethod
     def get_defs(silent=False):
         # Query to download site definitions from online.
         global DEFS_GOTTEN
@@ -741,10 +745,11 @@ class AutoCurator(tk.Frame):
         data = fpclib.read_url("https://github.com/FlashpointProject/fpcurator/raw/main/sites/defs.txt")
         AutoCurator.download_defs(data, False)
 
+    @staticmethod
     def s_curate(output, defs, urls, titles, save, ignore_errs):
         cwd = os.getcwd()
         fpclib.make_dir(output, True)
-        errs = fpclib.curate_regex(urls, defs, use_title=titles, save=save, ignore_errs=ignore_errs)
+        errs = fpclib.curate_regex(urls, defs, use_title=titles, save=save, ignore_errs=ignore_errs, config="clients.txt", config_paths=[os.path.dirname(__file__)])
         os.chdir(cwd)
 
         # Print errors
@@ -822,13 +827,13 @@ class Downloader(tk.Frame):
         self.replace_https = tk.BooleanVar()
         self.replace_https.set(True)
 
-        original = tk.Checkbutton(cframe, bg="white", text='Rename "web.archive.org"', var=self.original)
+        original = tk.Checkbutton(cframe, bg="white", text='Rename "web.archive.org"', var=self.original)  # pyright: ignore [reportCallIssue] # tkinter does have "var"
         original.pack(side="left")
-        keep_vars = tk.Checkbutton(cframe, bg="white", text="Keep URLVars", var=self.keep_vars)
+        keep_vars = tk.Checkbutton(cframe, bg="white", text="Keep URLVars", var=self.keep_vars)  # pyright: ignore [reportCallIssue] # tkinter does have "var"
         keep_vars.pack(side="left", padx=5)
-        clear = tk.Checkbutton(cframe, bg="white", text="Clear Done URLs", var=self.clear)
+        clear = tk.Checkbutton(cframe, bg="white", text="Clear Done URLs", var=self.clear)  # pyright: ignore [reportCallIssue] # tkinter does have "var"
         clear.pack(side="left")
-        show_done = tk.Checkbutton(cframe, bg="white", text='Notify When Done', var=self.show_done)
+        show_done = tk.Checkbutton(cframe, bg="white", text='Notify When Done', var=self.show_done)  # pyright: ignore [reportCallIssue] # tkinter does have "var"
         show_done.pack(side="left", padx=5)
 
         Tooltip(original, text="When checked, the downloader will put all urls downloaded from the web archive back into their original domains.")
@@ -927,15 +932,15 @@ class Searcher(tk.Frame):
         self.exact_url.set(True)
         self.difflib = tk.BooleanVar()
 
-        priorities = tk.Checkbutton(cframe, bg="white", text="Priorities", var=self.priorities)
+        priorities = tk.Checkbutton(cframe, bg="white", text="Priorities", var=self.priorities)  # pyright: ignore [reportCallIssue] # tkinter does have "var"
         priorities.pack(side="left")
-        log = tk.Checkbutton(cframe, bg="white", text="Log", var=self.log)
+        log = tk.Checkbutton(cframe, bg="white", text="Log", var=self.log)  # pyright: ignore [reportCallIssue] # tkinter does have "var"
         log.pack(side="left", padx=5)
-        strip = tk.Checkbutton(cframe, bg="white", text="Strip Subtitles", var=self.strip)
+        strip = tk.Checkbutton(cframe, bg="white", text="Strip Subtitles", var=self.strip)  # pyright: ignore [reportCallIssue] # tkinter does have "var"
         strip.pack(side="left")
-        exact_url = tk.Checkbutton(cframe, bg="white", text="Exact Url Matches", var=self.exact_url)
+        exact_url = tk.Checkbutton(cframe, bg="white", text="Exact Url Matches", var=self.exact_url)  # pyright: ignore [reportCallIssue] # tkinter does have "var"
         exact_url.pack(side="left", padx=5)
-        difflib = tk.Checkbutton(cframe, bg="white", text="Use difflib", var=self.difflib)
+        difflib = tk.Checkbutton(cframe, bg="white", text="Use difflib", var=self.difflib)  # pyright: ignore [reportCallIssue] # tkinter does have "var"
         difflib.pack(side="left")
 
         Tooltip(priorities, text='When checked, the searcher will generate a list of numeric priorities and print them into a file named "priorities.txt" next to the program. This is mainly used for copying into a spreadsheet.')
@@ -960,6 +965,7 @@ class Searcher(tk.Frame):
         db = tkfd.askopenfilename(filetypes=[("SQLite Database", "*.sqlite")])
         if db: self.parent.database.set(db)
 
+    @staticmethod
     def s_load(dbloc, silent=False):
         try:
             # Acquire the database!
@@ -1024,6 +1030,7 @@ class Searcher(tk.Frame):
             print_err("  ")
             tkm.showerror(message=f"Failed to get input data.\n{e.__class__.__name__}: {str(e)}")
 
+    @staticmethod
     def s_search(titles, urls, dbloc, src_regex_str, dp_regex_str, PRIORITIES, LOG, STRIP_SUBTITLES, EXACT_URL_CHECK, DIFFLIB, silent_=False):
         try:
             period = time.time()
@@ -1098,13 +1105,13 @@ class Searcher(tk.Frame):
             fpclib.DEBUG_LEVEL = dl
 
             # Split database into full data
-            data = [i.split("\t") for i in raw_data.split("\n")]
+            data: 'list[list[str|list[str]]]' = [i.split("\t") for i in raw_data.split("\n")]  # pyright: ignore [reportAssignmentType] # this expansion is okay
             data_count = len(data)
             # Further split alternate titles, developers, and publishers
             # Could probably be more optimized, but whatever
             for i in range(len(data)):
                 for j in range(3, 6):
-                    data[i][j] = data[i][j].split(';')
+                    data[i][j] = data[i][j].split(';')  # pyright: ignore [reportAttributeAccessIssue] # data is list[list[str]] but becomes it's full type here
             print('Done (%.3f secs)' % (time.time() - period))
 
 
@@ -1626,6 +1633,7 @@ class SingleSearcher(tk.Frame):
             con.commit()
             con.close()
 
+    @staticmethod
     def parse_query(cur, query, lib, silent=False):
         if not query.strip(): return ""
 
@@ -1669,6 +1677,7 @@ class SingleSearcher(tk.Frame):
         # Join and return sql
         return f"SELECT id, title, platform, source, library FROM game WHERE {libwhere}{extremewhere}({' '.join(sql)})", args
 
+    @staticmethod
     def parse_token(cur, sql, args, token):
         # Check invert
         if token[1]: invert = "NOT ("
@@ -1743,6 +1752,7 @@ class SingleSearcher(tk.Frame):
 
         return True
 
+    @staticmethod
     def execute_search(cur, sql, args, callback, silent=False):
         print("[INFO] Attempting to search through the Flashpoint database")
         try:
@@ -1858,7 +1868,7 @@ class DeDuper(tk.Frame):
 
         self.src_chk = tk.BooleanVar()
         self.src_chk.set(True)
-        src_chk = tk.Checkbutton(bframe, bg="white", text="Check Source", var=self.src_chk)
+        src_chk = tk.Checkbutton(bframe, bg="white", text="Check Source", var=self.src_chk)  # pyright: ignore [reportCallIssue] # tkinter does have "var"
         src_chk.pack(side="left")
         Tooltip(src_chk, text="When checked, the deduper will check to see if the source url is in the database. Turn this off if you have multiple games per the same source (like from a local disk)")
 
@@ -1881,7 +1891,7 @@ class DeDuper(tk.Frame):
         self.results.pack(padx=5, pady=(0, 5), fill="both", expand=True)
 
         # Update
-        self.update = False
+        self.has_update = False
         self.after(100, self.check_update)
 
     def get_database(self):
@@ -1916,9 +1926,9 @@ class DeDuper(tk.Frame):
         if data: pyperclip.copy("\n".join(data))
 
     def check_update(self):
-        if self.update:
+        if self.has_update:
             self.set_results(self.rdata)
-            self.update = False
+            self.has_update = False
         self.after(100, self.check_update)
     def set_results(self, results):
         self.rdata = results
@@ -1927,6 +1937,7 @@ class DeDuper(tk.Frame):
         for i, result in enumerate(results):
             self.results.insert("", index="end", iid=i, text=result[2], values=tuple(result[3:]))
 
+    @staticmethod
     def i_search(folder, db, src_chk, ui=None):
         try:
             con = sqlite3.connect(db)
@@ -1967,9 +1978,10 @@ class DeDuper(tk.Frame):
 
         if ui:
             ui.rdata = results
-            ui.update = True
+            ui.needs_update = True
             unfreeze()
 
+    @staticmethod
     def find_msg(c, cur, src_chk):
         platform = c.platform
 

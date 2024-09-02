@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "fpcurator"
-version = "1.6.3"
+version = "1.7.0"
 description = "fpcurator is a Python and fpclib powered tool for downloading urls, auto-generating curations, bulk searching for already curated games, and listing tags/platforms/games/animations for Flashpoint."
 authors = ["mathgeniuszach <huntingmanzach@gmail.com>"]
 readme = "README.md"
@@ -14,7 +14,7 @@ pyperclip = "^1.8.2"
 googletrans = "^3.0.0"
 qfile = "^1.1.0.7"
 python-levenshtein = "^0.25.0"
-fpclib = "^1.8.2"
+fpclib = "^1.9.3"
 
 [tool.poetry.group.dev.dependencies]
 pyinstaller = "^6.6.0"
