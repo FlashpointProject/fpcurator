@@ -91,6 +91,7 @@ HELP_HTML = """<!doctype html>
         <li><b>Keep URLVars</b> - When checked, the downloader will append url vars present on links being downloaded to the end of the html file. This is only necessary when you have two links to the same webpage that generate different html due to the url vars.</li>
         <li><b>Clear Done URLs</b> - When checked, the downloader will clear any urls in the list when they are downloaded. Errored urls will remain in the list.</li>
         <li><b>Notify When Done</b> - When checked, the downloader will show a message box when it is done downloading.</li>
+        <li><b>Spoof Referrer</b> - When checked, the downloader will spoof the referrer of the urls to be the url itself.</li>
     </ul>
     Here are some basic usage steps:
     <ol>
@@ -225,8 +226,8 @@ FIELDS = {
 # This uuid uniquely defines fpcurator. (there is a 0 on the end after the text)
 UUID = '51be8a01-3307-4103-8913-c2f70e64d83'
 
-TITLE = "fpcurator v1.7.0"
-ABOUT = "Created by Zach K - v1.7.0"
+TITLE = "fpcurator v1.7.1"
+ABOUT = "Created by Zach K - v1.7.1"
 VER = 7
 
 SITES_FOLDER = "sites"
@@ -454,6 +455,7 @@ class Mainframe(tk.Tk):
         downloader["keep_vars"] = self.downloader.keep_vars.get()
         downloader["clear"] = self.downloader.clear.get()
         downloader["show_done"] = self.downloader.show_done.get()
+        downloader["spoof"] = self.downloader.spoof.get()
 
         downloader["urls"] = self.downloader.stxt.txt.get("0.0", "end").strip()
 
@@ -519,6 +521,7 @@ class Mainframe(tk.Tk):
             self.downloader.keep_vars.set(downloader["keep_vars"])
             self.downloader.clear.set(downloader["clear"])
             self.downloader.show_done.set(downloader["show_done"])
+            self.downloader.spoof.set(downloader["spoof"])
 
             txt = self.downloader.stxt.txt
             txt.delete("0.0", "end")
@@ -826,6 +829,8 @@ class Downloader(tk.Frame):
         self.original.set(True)
         self.replace_https = tk.BooleanVar()
         self.replace_https.set(True)
+        self.spoof = tk.BooleanVar()
+        self.spoof.set(True)
 
         original = tk.Checkbutton(cframe, bg="white", text='Rename "web.archive.org"', var=self.original)  # pyright: ignore [reportCallIssue] # tkinter does have "var"
         original.pack(side="left")
@@ -835,17 +840,25 @@ class Downloader(tk.Frame):
         clear.pack(side="left")
         show_done = tk.Checkbutton(cframe, bg="white", text='Notify When Done', var=self.show_done)  # pyright: ignore [reportCallIssue] # tkinter does have "var"
         show_done.pack(side="left", padx=5)
+        spoof = tk.Checkbutton(cframe, bg="white", text='Spoof Referrer', var=self.spoof)  # pyright: ignore [reportCallIssue] # tkinter does have "var"
+        spoof.pack(side="left")
 
         Tooltip(original, text="When checked, the downloader will put all urls downloaded from the web archive back into their original domains.")
         Tooltip(keep_vars, text="When checked, the downloader will append url vars present on links being downloaded to the end of the html file. This is only necessary when you have two links to the same webpage that generate different html due to the url vars.")
         Tooltip(clear, text="When checked, the downloader will clear any urls in the list when they are downloaded. Errored urls will remain in the list.")
         Tooltip(show_done, text="When checked, the downloader will show a message box when it is done downloading.")
+        Tooltip(spoof, text="When checked, the downloader will spoof the referrer of the urls to be the url itself.")
 
-        # Create panel for inputting urls to download
-        lbl = tk.Label(self, bg="white", text="  Put URLs to download in this box:")
+        # Panels
+        lbl = tk.Label(self, bg="white", text="Put URLs to download at the top and headers at the bottom.")
         lbl.pack(fill="x")
-        self.stxt = ScrolledText(self, width=10, height=10, wrap="none")
-        self.stxt.pack(expand=True, fill="both", padx=5, pady=5)
+        txts = tk.Frame(self, bg="white")
+        txts.pack(expand=True, fill="both", padx=5, pady=(0, 5))
+
+        self.stxt = ScrolledText(txts, width=10, height=10, wrap="none")
+        self.stxt.pack(side="top", expand=True, fill="both")
+        self.stxt_headers = ScrolledText(txts, width=10, height=10, wrap="none")
+        self.stxt_headers.pack(side="top", expand=False, fill="both")
 
     def folder(self):
         # For changing the output directory
@@ -856,10 +869,15 @@ class Downloader(tk.Frame):
 
     def i_download(self):
         txt = self.stxt.txt
+        htxt = self.stxt_headers.txt
         try:
+            headers = {}
+            for key, value in [i.strip().split("=", 1) for i in htxt.get("0.0", "end").replace("\r\n", "\n").replace("\r", "\n").split("\n") if i.strip()]:
+                headers[key.strip()] = value.strip()
+
             links = [i.strip() for i in txt.get("0.0", "end").replace("\r\n", "\n").replace("\r", "\n").split("\n") if i.strip()]
             if links:
-                errs = fpclib.download_all(links, self.output.get() or "output", not self.original.get(), self.keep_vars.get(), True)
+                errs = fpclib.download_all(links, self.output.get() or "output", not self.original.get(), self.keep_vars.get(), True, spoof=self.spoof.get(), headers=headers)
                 if self.show_done.get():
                     if errs:
                         if len(errs) == len(links):
