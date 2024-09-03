@@ -226,8 +226,8 @@ FIELDS = {
 # This uuid uniquely defines fpcurator. (there is a 0 on the end after the text)
 UUID = '51be8a01-3307-4103-8913-c2f70e64d83'
 
-TITLE = "fpcurator v1.7.1"
-ABOUT = "Created by Zach K - v1.7.1"
+TITLE = "fpcurator v1.7.2"
+ABOUT = "Created by Zach K - v1.7.2"
 VER = 7
 
 SITES_FOLDER = "sites"
@@ -692,14 +692,15 @@ class AutoCurator(tk.Frame):
         global DEFS_GOTTEN
         if not silent and not DEFS_GOTTEN:
             DEFS_GOTTEN = True
-            data, odata = None, None
+            local_timestamp, online_timestamp = 0, 1
             try:
                 data = fpclib.read_url("https://github.com/FlashpointProject/fpcurator/raw/main/sites/defs.txt")
-                odata = fpclib.read(SITES_FOLDER+"/defs.txt")
+                online_timestamp = float(data.splitlines()[0])
+                local_timestamp = float(fpclib.read(SITES_FOLDER+"/defs.txt").splitlines()[0])
             except: pass
 
             try:
-                if data != odata and tkm.askyesno(message="The Auto Curator's site definitions are out of date, would you like to redownload them from online? (you won't be able to use the Auto Curator fully without them)"):
+                if local_timestamp < online_timestamp and tkm.askyesno(message="The Auto Curator's site definitions are out of date, would you like to redownload them from online? (you won't be able to use the Auto Curator fully without them)"):
                     AutoCurator.download_defs(data, silent)
             except Exception:
                 pass
