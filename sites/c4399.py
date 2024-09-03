@@ -11,6 +11,8 @@ IS_HTML5 = re.compile(r"var\s+isHTML5\s*=\s*(\d+)", re.IGNORECASE)
 SCREENSHOT = re.compile(r'var\s+\w+GamePic\s*=\s*"(.*?)"', re.IGNORECASE)
 GAMEPATH = re.compile(r'var\s+\w+GamePath\s*=\s*"(.*?)"', re.IGNORECASE)
 DIMS = re.compile(r'var\s+_w\s*=\s*(\d+);?\s*var\s+_h\s*=\s*(\d+)')
+QUOTED_FILE = re.compile(rb'"([\w./-]+?\.(swf|unity3d))"')
+HTML_FILES = re.compile(r'.*\.(htm|html)$')
 
 HTML_EMBED = """<body>
     <style>
@@ -41,7 +43,7 @@ class c4399(fpclib.Curation):
         with requests.get(self.src) as resp:
             soup = bs4.BeautifulSoup(resp.content, "html.parser")
         if not GAME_URL.search(self.src):
-            self.src = "https://wwww.4399.com" + soup.select_one(".play > a")["href"]
+            self.src = "https://www.4399.com" + soup.select_one(".play > a")["href"]
             with requests.get(self.src) as resp:
                 soup = bs4.BeautifulSoup(resp.content, "html.parser")
         return soup
@@ -115,25 +117,60 @@ class c4399(fpclib.Curation):
             is_html = bool(int(IS_HTML5.search(headtxt)[1]))
         except:
             is_html = False
+        # Embed and cdn files
         self.embed = fpclib.normalize(self.src, False)
         self.cdn = "http://sda.4399.com/4399swf" + GAMEPATH.search(headtxt)[1]
+        # Extra files to download
+        self.extra = []
 
+        # Embed dimensions
         dims = DIMS.search(headtxt)
         self.dims = (dims[1], dims[2])
 
+        # If the "isHTML5" flag is set, it's an html5 game.
         if is_html:
             self.platform = "HTML5"
-            self.app = fpclib.FPNAVIGATOR
-            self.cmd = self.embed
+        # Otherwise, check the ending of the file
+        # Flash games end in .swf
         elif self.cdn.endswith(".swf"):
             self.platform = "Flash"
+        # Unity games end in .unity3d
+        # I don't think a cdn file will ever end in .unity3d, but just in case, raise an error.
+        elif self.cdn.endswith(".unity3d"):
+            raise NotImplementedError("4399 embeds unity3d file directly from cdn.")
+        else:
+            # If the cdn file is something else, search for a ".swf" or ".unity3d" string inside it
+            with requests.get(self.cdn, headers={"referer": self.cdn}) as resp:
+                file = QUOTED_FILE.search(resp.content)
+
+            if file is not None:
+                direct_file = self.cdn[:self.cdn.rindex("/")+1] + file[1].decode("utf-8")
+                if file[2] == b"swf":
+                    # swf file found embedded in the content. Try using it
+                    self.cdn = direct_file
+                    self.platform = "Flash"
+                else:
+                    # unity3d file found embedded in the content. Mark it for download later
+                    self.extra.append(direct_file)
+                    self.platform = "Unity"
+
+        # Use detected platform to determine launch data
+        if self.platform == "HTML5":
+            self.app = fpclib.FPNAVIGATOR
+            self.cmd = self.embed
+        elif self.platform == "Flash":
             self.app = fpclib.FLASH
             self.cmd = self.cdn
             self.add_app("Embedded Page", self.embed, fpclib.FPNAVIGATOR)
-        else:
-            self.platform = "Unity"
+        elif self.platform == "Unity":
             self.app = fpclib.UNITY
             self.cmd = self.embed
+        else:
+            # It's probably a Flash game
+            self.platform = "Flash"
+            self.app = fpclib.FPNAVIGATOR
+            self.cmd = self.embed
+
 
     def get_files(self):
         # Create embed file
@@ -144,4 +181,8 @@ class c4399(fpclib.Curation):
         fpclib.write(self.embed[self.embed.index("://")+3:], html)
 
         # Download the game's true embedded file
-        fpclib.download_all((self.cdn,), spoof=True)
+        self.extra.append(self.cdn)
+        fpclib.download_all(self.extra, spoof=True)
+
+        # Replace https with http in html cdn files
+        fpclib.replace(fpclib.scan_dir('', HTML_FILES)[0], 'https:', 'http:')
