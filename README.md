@@ -7,6 +7,8 @@ If you don't want to install python to use fpcurator, check the releases page fo
 
 **NOTE: Auto curated games should ALWAYS be tested in Flashpoint Core before being submitted.**
 
+<img src="screenshot.png">
+
 ## Basic Usage
 
 You can add the necessary dependencies with `poetry install` then launch the script using `poetry run python fpcurator.py` or `poe run`.
@@ -21,6 +23,7 @@ If you are looking for command line usage, run `fpcurator --help` or `fpcurator.
 
 The Auto Curator supports auto curating games from these websites:
 
+- [4399](https://www.4399.com/) (Flash, Unity, or HTML5)
 - [Addicting Games](https://www.addictinggames.com/) (Flash and HTML5)
 - [Construct](https://www.construct.net/) (HTML5)
 - [Coolmath Games](https://www.coolmathgames.com/) (HTML5)

@@ -26,7 +26,7 @@ def get_gallery_folder(self, username="", folderid="", mode="popular", offset=0,
             })
         else:
             if not username:
-                raise DeviantartError("No username defined.")
+                raise deviantart.api.DeviantartError("No username defined.")
             else:
                 response = self._req('/gallery/{}'.format(folderid), {
                     "username":username,
@@ -39,7 +39,7 @@ def get_gallery_folder(self, username="", folderid="", mode="popular", offset=0,
         deviations = []
 
         for item in response['results']:
-            d = deviantart.deviation.Deviation()
+            d = deviantart.api.Deviation()
             d.from_dict(item)
             deviations.append(d)
 
@@ -81,7 +81,7 @@ class DeviantArt(fpclib.Curation):
         # Connect to DeviantArt
         try: DA_CLIENT = deviantart.Api(client_id, client_secret)
         except: raise ValueError('Could not setup DeviantArt API.')
-    
+
         uuid = soup.find("meta", property="da:appurl")["content"][23:]
         try: swfurl = DA_CLIENT.download_deviation(uuid)
         except: raise ValueError(self.src + ': Work is not downloadable. UUID '+ uuid)

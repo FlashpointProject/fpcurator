@@ -30,6 +30,10 @@ UNITY_EMBED = """<html>
 """
 
 class Y8(fpclib.Curation):
+    def soupify(self):
+        with requests.get(fpclib.normalize(self.src, True, True, True)) as response:
+            return BeautifulSoup(response.content, "html5lib")
+
     def parse(self, soup):
         try:
             self.title = soup.find("h1").text.strip()
@@ -78,7 +82,7 @@ class Y8(fpclib.Curation):
                 if "//" in cmd: cmd = fpclib.normalize(cmd)
                 elif cmd[0] == "/": cmd = "http://www.y8.com" + cmd
                 else: cmd = url + cmd
-                
+
                 # Shockwave game
                 self.platform = "Shockwave"
                 self.app = fpclib.SHOCKWAVE
