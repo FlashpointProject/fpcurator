@@ -67,9 +67,9 @@ class Kongregate(fpclib.Curation):
 
         desc = ""
         try:
-            desc += "Description\n" + idata.select_one("#game_description > div > .full_text").text.replace("\t", "")[:-9]
+            desc += idata.select_one("#game_description > div > .full_text").text.replace("\t", "")[:-9]
         except: 
-            try: desc += "Description\n" + idata.select_one("#game_description > p").text.replace("\t", "")
+            try: desc += idata.select_one("#game_description > p").text.replace("\t", "")
             except: pass
         try:
             desc += ("\n\n" if desc else "") + "Instructions\n" + idata.select_one("#game_instructions > div > .full_text").text[:-9].replace("\t", "")
