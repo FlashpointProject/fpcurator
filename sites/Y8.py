@@ -139,3 +139,7 @@ class Y8(fpclib.Curation):
         try:
             fpclib.download_image(url, name=file_name)
         except: pass
+
+    def soupify(self):
+        with requests.get(fpclib.normalize(self.src, True, True, True)) as response:
+            return BeautifulSoup(response.content)

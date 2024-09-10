@@ -67,15 +67,22 @@ class Kongregate(fpclib.Curation):
 
         desc = ""
         try:
-            desc += "Instructions\n\n" + idata.select_one("#game_instructions > div > .full_text").text[:-9].replace("\t", "")
-        except: pass
+            desc += idata.select_one("#game_description > div > .full_text").text.replace("\t", "")[:-9]
+        except: 
+            try: desc += idata.select_one("#game_description > p").text.replace("\t", "")
+            except: pass
         try:
-            n = idata.select_one("#game_description > div > .full_text").text.replace("\t", "")[:-9]
-            if desc: desc + "\n\n"
-            desc += "Description\n\n" + n
-        except: pass
+            desc += ("\n\n" if desc else "") + "Instructions\n" + idata.select_one("#game_instructions > div > .full_text").text[:-9].replace("\t", "")
+        except:
+            try: desc += ("\n\n" if desc else "") + "Instructions\n" + idata.select_one("#game_instructions > p").text.replace("\t", "")
+            except: pass
 
         self.desc = desc
+
+        # Get tags
+        tags = soup.find_all('a', attrs={'class':'term'})
+        if len(tags):
+            self.tags = [x.text for x in tags]
 
         # Kongregate makes it slightly difficult to find the launch command, but we'll get there
         # First, find the script next to the would be game frame:
