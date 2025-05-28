@@ -28,6 +28,7 @@ The Auto Curator supports auto curating games from these websites:
 - [Construct](https://www.construct.net/) (HTML5)
 - [Coolmath Games](https://www.coolmathgames.com/) (HTML5)
 - [Deviant Art](https://www.deviantart.com/) (SFW Flash) - \*
+- [EtoysIllinois](http://etoysillinois.org/library) (Squeak)
 - [FreeArcade](http://www.freearcade.com/) (Flash or Java)
 - [Fur Affinity](https://www.furaffinity.net/) (Flash) - \*\*
 - [Game Jolt](https://gamejolt.com/) (Flash or Unity)
