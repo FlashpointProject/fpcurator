@@ -5,7 +5,7 @@ import requests
 import bs4
 from zipfile import ZipFile
 
-regex = 'therese.eveilleau.pagesperso-orange.fr'
+regex = 'mathsmagiques.fr'
 ver = 6
 
 class Therese(fpclib.Curation):
